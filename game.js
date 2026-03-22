@@ -1,5 +1,5 @@
 // ============================================
-// STEAK 'N' SHAKE TIP RUSH
+// STEAK 'N' SHAKE TIP RUSH - GTA STYLE
 // ============================================
 
 const GAME_W = 480;
@@ -11,8 +11,6 @@ const GAME = {
     ctx: null,
     lastTime: 0,
     scale: 1,
-    offsetX: 0,
-    offsetY: 0,
     player: null,
     francisco: null,
     tips: [],
@@ -29,16 +27,23 @@ const GAME = {
     activePowerup: null,
     powerupTimer: 0,
     nextPowerupSpawn: 15,
-    powerupSpawnTimer: 0
+    powerupSpawnTimer: 0,
+    logo: null,
+    logoLoaded: false
 };
 
-// Restaurant layout - tables, booths, counter (all as {x, y, w, h})
+// Load Steak 'n' Shake logo
+const logoImg = new Image();
+logoImg.crossOrigin = 'anonymous';
+logoImg.onload = () => { GAME.logo = logoImg; GAME.logoLoaded = true; };
+logoImg.src = 'https://cdn.freebiesupply.com/logos/large/2x/steak-n-shake-logo-png-transparent.png';
+
+// Restaurant layout
 const WALLS = [
-    // Outer walls
-    { x: 0, y: 0, w: GAME_W, h: 10 },           // top
-    { x: 0, y: GAME_H - 10, w: GAME_W, h: 10 },  // bottom
-    { x: 0, y: 0, w: 10, h: GAME_H },             // left
-    { x: GAME_W - 10, y: 0, w: 10, h: GAME_H },   // right
+    { x: 0, y: 0, w: GAME_W, h: 10 },
+    { x: 0, y: GAME_H - 10, w: GAME_W, h: 10 },
+    { x: 0, y: 0, w: 10, h: GAME_H },
+    { x: GAME_W - 10, y: 0, w: 10, h: GAME_H },
 ];
 
 const COUNTER = { x: 30, y: 50, w: GAME_W - 60, h: 35 };
@@ -48,33 +53,34 @@ for (let i = 0; i < 7; i++) {
     STOOLS.push({ x: 55 + i * 55, y: 92 });
 }
 
-// Booths along walls
 const BOOTHS = [
-    { x: 15, y: 150, w: 80, h: 55 },
-    { x: 15, y: 280, w: 80, h: 55 },
-    { x: 15, y: 410, w: 80, h: 55 },
-    { x: GAME_W - 95, y: 150, w: 80, h: 55 },
-    { x: GAME_W - 95, y: 280, w: 80, h: 55 },
-    { x: GAME_W - 95, y: 410, w: 80, h: 55 },
+    { x: 15, y: 180, w: 80, h: 55 },
+    { x: 15, y: 320, w: 80, h: 55 },
+    { x: 15, y: 460, w: 80, h: 55 },
+    { x: GAME_W - 95, y: 180, w: 80, h: 55 },
+    { x: GAME_W - 95, y: 320, w: 80, h: 55 },
+    { x: GAME_W - 95, y: 460, w: 80, h: 55 },
 ];
 
-// Center tables
 const TABLES = [
-    { x: 170, y: 170, w: 55, h: 40 },
-    { x: 260, y: 170, w: 55, h: 40 },
-    { x: 170, y: 300, w: 55, h: 40 },
-    { x: 260, y: 300, w: 55, h: 40 },
-    { x: 170, y: 430, w: 55, h: 40 },
-    { x: 260, y: 430, w: 55, h: 40 },
+    { x: 160, y: 200, w: 50, h: 35 },
+    { x: 275, y: 200, w: 50, h: 35 },
+    { x: 160, y: 345, w: 50, h: 35 },
+    { x: 275, y: 345, w: 50, h: 35 },
+    { x: 160, y: 485, w: 50, h: 35 },
+    { x: 275, y: 485, w: 50, h: 35 },
 ];
 
-// All solid obstacles for collision
 const OBSTACLES = [...WALLS, COUNTER, ...BOOTHS, ...TABLES];
 
-// Valid tip positions (centers of tables and booths)
+// Tips spawn NEXT TO tables/booths on the floor, not inside them
 const TIP_POSITIONS = [
-    ...TABLES.map(t => ({ x: t.x + t.w / 2, y: t.y + t.h / 2 })),
-    ...BOOTHS.map(b => ({ x: b.x + b.w / 2, y: b.y + b.h / 2 })),
+    // Next to center tables (on the walkable side)
+    ...TABLES.map(t => ({ x: t.x - 20, y: t.y + t.h / 2 })),
+    ...TABLES.map(t => ({ x: t.x + t.w + 4, y: t.y + t.h / 2 })),
+    // Next to booths (on the inner walkable side)
+    ...BOOTHS.filter(b => b.x < GAME_W / 2).map(b => ({ x: b.x + b.w + 4, y: b.y + b.h / 2 })),
+    ...BOOTHS.filter(b => b.x > GAME_W / 2).map(b => ({ x: b.x - 20, y: b.y + b.h / 2 })),
 ];
 
 // ============================================
@@ -91,21 +97,16 @@ function init() {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // Keyboard input
     window.addEventListener('keydown', e => { GAME.keys[e.key.toLowerCase()] = true; });
     window.addEventListener('keyup', e => { GAME.keys[e.key.toLowerCase()] = false; });
 
-    // Joystick
     if (GAME.isMobile) {
         document.getElementById('joystick-container').style.display = 'block';
         setupJoystick();
     }
 
-    // Start loop
     GAME.lastTime = performance.now();
     requestAnimationFrame(gameLoop);
-
-    // Render static restaurant for menu background
     renderRestaurant();
 }
 
@@ -113,8 +114,6 @@ function resizeCanvas() {
     const dpr = window.devicePixelRatio || 1;
     const containerW = window.innerWidth;
     const containerH = window.innerHeight;
-
-    // Fit game aspect ratio
     const aspect = GAME_W / GAME_H;
     let drawW, drawH;
     if (containerW / containerH < aspect) {
@@ -124,23 +123,17 @@ function resizeCanvas() {
         drawH = containerH;
         drawW = containerH * aspect;
     }
-
     GAME.canvas.style.width = drawW + 'px';
     GAME.canvas.style.height = drawH + 'px';
     GAME.canvas.width = drawW * dpr;
     GAME.canvas.height = drawH * dpr;
-
     GAME.scale = (drawW / GAME_W) * dpr;
     GAME.ctx.setTransform(GAME.scale, 0, 0, GAME.scale, 0, 0);
 }
 
 function updateMenuHighScore() {
     const el = document.getElementById('menu-highscore');
-    if (GAME.highScore > 0) {
-        el.textContent = 'High Score: $' + GAME.highScore;
-    } else {
-        el.textContent = '';
-    }
+    el.textContent = GAME.highScore > 0 ? 'High Score: $' + GAME.highScore : '';
 }
 
 // ============================================
@@ -171,10 +164,7 @@ function setupJoystick() {
                 let dx = touch.clientX - originX;
                 let dy = touch.clientY - originY;
                 const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist > maxDist) {
-                    dx = (dx / dist) * maxDist;
-                    dy = (dy / dist) * maxDist;
-                }
+                if (dist > maxDist) { dx = (dx / dist) * maxDist; dy = (dy / dist) * maxDist; }
                 thumb.style.transform = `translate(${dx}px, ${dy}px)`;
                 GAME.input.dx = dx / maxDist;
                 GAME.input.dy = dy / maxDist;
@@ -218,37 +208,37 @@ function startGame() {
     GAME.powerupSpawnTimer = 0;
     GAME.nextPowerupSpawn = 10 + Math.random() * 10;
 
-    // Player setup
+    // BIGGER player (was 20x28, now 32x44)
     const skinColor = GAME.selectedChar === 'chris' ? '#FDBCB4' : '#C68642';
     GAME.player = {
-        x: GAME_W / 2 - 10,
-        y: GAME_H - 80,
-        w: 20,
-        h: 28,
-        speed: 150,
+        x: GAME_W / 2 - 16,
+        y: GAME_H - 100,
+        w: 32,
+        h: 44,
+        speed: 140,
         skinColor: skinColor,
+        hairColor: GAME.selectedChar === 'chris' ? '#8B6914' : '#1a1a1a',
         name: GAME.selectedChar === 'chris' ? 'Chris' : 'Jabu',
         dir: { x: 0, y: -1 },
-        bobTimer: 0
+        bobTimer: 0,
+        walkFrame: 0
     };
 
-    // Francisco setup - spawns from behind the counter
+    // BIGGER and SLOWER Francisco (was 24x32 speed 80, now 40x52 speed 55)
     GAME.francisco = {
-        x: GAME_W / 2 - 12,
-        y: 120,
-        w: 24,
-        h: 32,
-        speed: 80,
-        baseSpeed: 80,
+        x: GAME_W / 2 - 20,
+        y: 95,
+        w: 40,
+        h: 52,
+        speed: 55,
+        baseSpeed: 55,
+        maxSpeed: 140,
         stuckTimer: 0,
         lastX: 0,
         lastY: 0
     };
 
-    // Spawn initial tips
-    for (let i = 0; i < 4; i++) {
-        spawnTip();
-    }
+    for (let i = 0; i < 5; i++) spawnTip();
 
     document.getElementById('menu-overlay').style.display = 'none';
     document.getElementById('gameover-overlay').style.display = 'none';
@@ -293,7 +283,6 @@ function gameLoop(now) {
     if (GAME.state === 'PLAYING') {
         update(dt);
     }
-
     if (GAME.state === 'PLAYING') {
         render();
     }
@@ -309,75 +298,68 @@ function update(dt) {
     GAME.elapsed += dt;
     GAME.difficulty = Math.floor(GAME.elapsed / 10);
 
-    // Process keyboard input
     let kx = 0, ky = 0;
     if (GAME.keys['w'] || GAME.keys['arrowup']) ky -= 1;
     if (GAME.keys['s'] || GAME.keys['arrowdown']) ky += 1;
     if (GAME.keys['a'] || GAME.keys['arrowleft']) kx -= 1;
     if (GAME.keys['d'] || GAME.keys['arrowright']) kx += 1;
 
-    // Combine keyboard and joystick
     let dx = GAME.input.dx + kx;
     let dy = GAME.input.dy + ky;
     const mag = Math.sqrt(dx * dx + dy * dy);
     if (mag > 1) { dx /= mag; dy /= mag; }
 
-    // Update player direction for rendering
     if (mag > 0.2) {
         GAME.player.dir.x = dx;
         GAME.player.dir.y = dy;
         GAME.player.bobTimer += dt * 10;
+        GAME.player.walkFrame += dt * 8;
     }
 
-    // Player speed (check powerup)
     let playerSpeed = GAME.player.speed;
     if (GAME.activePowerup === 'speed') playerSpeed *= 2;
 
-    // Move player
     const p = GAME.player;
     const newPX = p.x + dx * playerSpeed * dt;
     const newPY = p.y + dy * playerSpeed * dt;
 
-    // Collision check X
-    if (!collidesWithObstacles({ x: newPX, y: p.y, w: p.w, h: p.h })) {
-        p.x = newPX;
-    }
-    // Collision check Y
-    if (!collidesWithObstacles({ x: p.x, y: newPY, w: p.w, h: p.h })) {
-        p.y = newPY;
-    }
+    if (!collidesWithObstacles({ x: newPX, y: p.y, w: p.w, h: p.h })) p.x = newPX;
+    if (!collidesWithObstacles({ x: p.x, y: newPY, w: p.w, h: p.h })) p.y = newPY;
 
-    // Clamp to bounds
     p.x = Math.max(12, Math.min(GAME_W - 12 - p.w, p.x));
     p.y = Math.max(12, Math.min(GAME_H - 12 - p.h, p.y));
 
-    // Francisco AI
     updateFrancisco(dt);
 
-    // Check player-francisco collision (forgiving hitbox)
-    const pHit = shrinkBox(p, 0.75);
-    const fHit = shrinkBox(GAME.francisco, 0.75);
+    // Forgiving collision for Francisco catching player
+    const pHit = shrinkBox(p, 0.6);
+    const fHit = shrinkBox(GAME.francisco, 0.6);
     if (aabb(pHit, fHit)) {
         gameOver();
         return;
     }
 
-    // Check tip collection
+    // GENEROUS tip collection radius - use expanded hitbox
+    const collectBox = {
+        x: p.x - 10,
+        y: p.y - 10,
+        w: p.w + 20,
+        h: p.h + 20
+    };
     for (let i = GAME.tips.length - 1; i >= 0; i--) {
         const tip = GAME.tips[i];
-        if (aabb(p, tip)) {
+        if (aabb(collectBox, tip)) {
             GAME.score += tip.value;
             GAME.tips.splice(i, 1);
             playSound('collect');
-            // Respawn after delay
-            setTimeout(spawnTip, 1000 + Math.random() * 1000);
+            setTimeout(spawnTip, 800 + Math.random() * 800);
         }
     }
 
-    // Check powerup collection
+    // Powerup collection
     for (let i = GAME.powerups.length - 1; i >= 0; i--) {
         const pu = GAME.powerups[i];
-        if (aabb(p, pu)) {
+        if (aabb(collectBox, pu)) {
             GAME.activePowerup = pu.type;
             GAME.powerupTimer = pu.type === 'speed' ? 4 : 3;
             GAME.powerups.splice(i, 1);
@@ -385,15 +367,11 @@ function update(dt) {
         }
     }
 
-    // Update powerup timer
     if (GAME.activePowerup) {
         GAME.powerupTimer -= dt;
-        if (GAME.powerupTimer <= 0) {
-            GAME.activePowerup = null;
-        }
+        if (GAME.powerupTimer <= 0) GAME.activePowerup = null;
     }
 
-    // Spawn powerups
     GAME.powerupSpawnTimer += dt;
     if (GAME.powerupSpawnTimer >= GAME.nextPowerupSpawn && GAME.powerups.length < 1) {
         spawnPowerup();
@@ -406,14 +384,10 @@ function updateFrancisco(dt) {
     const f = GAME.francisco;
     const p = GAME.player;
 
-    // Freeze check
-    if (GAME.activePowerup === 'freeze') {
-        f.stuckTimer = 0;
-        return;
-    }
+    if (GAME.activePowerup === 'freeze') { f.stuckTimer = 0; return; }
 
-    // Speed scales with difficulty
-    f.speed = Math.min(180, f.baseSpeed + GAME.difficulty * 8);
+    // Slower speed scaling: starts at 55, gains +5 per 10 sec, caps at 140
+    f.speed = Math.min(f.maxSpeed, f.baseSpeed + GAME.difficulty * 5);
 
     let fdx = p.x - f.x;
     let fdy = p.y - f.y;
@@ -423,42 +397,25 @@ function updateFrancisco(dt) {
     const moveX = fdx * f.speed * dt;
     const moveY = fdy * f.speed * dt;
 
-    let moved = false;
-
-    // Try full movement
     const newX = f.x + moveX;
     const newY = f.y + moveY;
     if (!collidesWithObstacles({ x: newX, y: newY, w: f.w, h: f.h })) {
-        f.x = newX;
-        f.y = newY;
-        moved = true;
+        f.x = newX; f.y = newY;
     } else {
-        // Try X only
-        if (!collidesWithObstacles({ x: newX, y: f.y, w: f.w, h: f.h })) {
-            f.x = newX;
-            moved = true;
-        }
-        // Try Y only
-        if (!collidesWithObstacles({ x: f.x, y: newY, w: f.w, h: f.h })) {
-            f.y = newY;
-            moved = true;
-        }
+        if (!collidesWithObstacles({ x: newX, y: f.y, w: f.w, h: f.h })) f.x = newX;
+        if (!collidesWithObstacles({ x: f.x, y: newY, w: f.w, h: f.h })) f.y = newY;
     }
 
-    // Stuck detection - nudge perpendicular
     const movedDist = Math.abs(f.x - f.lastX) + Math.abs(f.y - f.lastY);
     if (movedDist < 0.5) {
         f.stuckTimer += dt;
         if (f.stuckTimer > 0.3) {
-            // Nudge perpendicular
-            const nudgeX = -fdy * f.speed * dt * 1.5;
-            const nudgeY = fdx * f.speed * dt * 1.5;
+            const nudgeX = -fdy * f.speed * dt * 2;
+            const nudgeY = fdx * f.speed * dt * 2;
             if (!collidesWithObstacles({ x: f.x + nudgeX, y: f.y + nudgeY, w: f.w, h: f.h })) {
-                f.x += nudgeX;
-                f.y += nudgeY;
+                f.x += nudgeX; f.y += nudgeY;
             } else if (!collidesWithObstacles({ x: f.x - nudgeX, y: f.y - nudgeY, w: f.w, h: f.h })) {
-                f.x -= nudgeX;
-                f.y -= nudgeY;
+                f.x -= nudgeX; f.y -= nudgeY;
             }
             f.stuckTimer = 0;
         }
@@ -466,10 +423,7 @@ function updateFrancisco(dt) {
         f.stuckTimer = 0;
     }
 
-    f.lastX = f.x;
-    f.lastY = f.y;
-
-    // Clamp to bounds
+    f.lastX = f.x; f.lastY = f.y;
     f.x = Math.max(12, Math.min(GAME_W - 12 - f.w, f.x));
     f.y = Math.max(12, Math.min(GAME_H - 12 - f.h, f.y));
 }
@@ -480,9 +434,8 @@ function updateFrancisco(dt) {
 
 function spawnTip() {
     if (GAME.state !== 'PLAYING') return;
-    if (GAME.tips.length >= 5) return;
+    if (GAME.tips.length >= 6) return;
 
-    // Find unused positions
     const used = new Set(GAME.tips.map(t => t.posIdx));
     const available = TIP_POSITIONS.map((_, i) => i).filter(i => !used.has(i));
     if (available.length === 0) return;
@@ -490,12 +443,14 @@ function spawnTip() {
     const idx = available[Math.floor(Math.random() * available.length)];
     const pos = TIP_POSITIONS[idx];
     const isBig = GAME.score >= 15 && Math.random() < 0.2;
+    const tipW = isBig ? 22 : 18;
+    const tipH = isBig ? 12 : 10;
 
     GAME.tips.push({
-        x: pos.x - 8,
-        y: pos.y - 4,
-        w: 16,
-        h: 8,
+        x: pos.x - tipW / 2,
+        y: pos.y - tipH / 2,
+        w: tipW,
+        h: tipH,
         value: isBig ? 5 : 1,
         isBig: isBig,
         posIdx: idx,
@@ -505,19 +460,16 @@ function spawnTip() {
 
 function spawnPowerup() {
     if (GAME.state !== 'PLAYING') return;
-
     const type = Math.random() < 0.5 ? 'speed' : 'freeze';
-
-    // Find open floor spot
     let x, y, attempts = 0;
     do {
         x = 120 + Math.random() * (GAME_W - 240);
         y = 120 + Math.random() * (GAME_H - 200);
         attempts++;
-    } while (collidesWithObstacles({ x: x - 10, y: y - 10, w: 20, h: 20 }) && attempts < 30);
+    } while (collidesWithObstacles({ x: x - 12, y: y - 12, w: 24, h: 24 }) && attempts < 30);
 
     if (attempts < 30) {
-        GAME.powerups.push({ type, x: x - 10, y: y - 10, w: 20, h: 20, bobTimer: 0 });
+        GAME.powerups.push({ type, x: x - 12, y: y - 12, w: 24, h: 24, bobTimer: 0 });
     }
 }
 
@@ -526,8 +478,7 @@ function spawnPowerup() {
 // ============================================
 
 function aabb(a, b) {
-    return a.x < b.x + b.w && a.x + a.w > b.x &&
-           a.y < b.y + b.h && a.y + a.h > b.y;
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
 function shrinkBox(box, factor) {
@@ -550,8 +501,17 @@ function collidesWithObstacles(box) {
 function render() {
     const ctx = GAME.ctx;
     ctx.save();
-
     renderRestaurant();
+
+    // Render tip glow indicators on floor
+    GAME.tips.forEach(tip => {
+        ctx.save();
+        ctx.fillStyle = tip.isBig ? 'rgba(255, 215, 0, 0.15)' : 'rgba(76, 175, 80, 0.12)';
+        ctx.beginPath();
+        ctx.arc(tip.x + tip.w / 2, tip.y + tip.h / 2, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    });
 
     // Render tips
     GAME.tips.forEach(tip => {
@@ -561,25 +521,33 @@ function render() {
         ctx.translate(tip.x + tip.w / 2, tip.y + tip.h / 2 + bob);
 
         if (tip.isBig) {
-            ctx.fillStyle = '#FFD700';
-            ctx.fillRect(-10, -5, 20, 10);
-            ctx.strokeStyle = '#B8860B';
-            ctx.strokeRect(-10, -5, 20, 10);
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 9px Courier New';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('$5', 0, 0);
-        } else {
+            // Gold $5 bill
             ctx.fillStyle = '#4CAF50';
-            ctx.fillRect(-8, -4, 16, 8);
+            ctx.fillRect(-11, -6, 22, 12);
             ctx.strokeStyle = '#2E7D32';
-            ctx.strokeRect(-8, -4, 16, 8);
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 7px Courier New';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(-11, -6, 22, 12);
+            ctx.fillStyle = '#FFD700';
+            ctx.fillRect(-9, -4, 18, 8);
+            ctx.fillStyle = '#1B5E20';
+            ctx.font = 'bold 10px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('$', 0, 0);
+            ctx.fillText('$5', 0, 1);
+        } else {
+            // Green $1 bill
+            ctx.fillStyle = '#4CAF50';
+            ctx.fillRect(-9, -5, 18, 10);
+            ctx.strokeStyle = '#2E7D32';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(-9, -5, 18, 10);
+            ctx.fillStyle = '#E8F5E9';
+            ctx.fillRect(-7, -3, 14, 6);
+            ctx.fillStyle = '#1B5E20';
+            ctx.font = 'bold 8px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('$1', 0, 0);
         }
         ctx.restore();
     });
@@ -591,67 +559,69 @@ function render() {
         ctx.save();
         ctx.translate(pu.x + pu.w / 2, pu.y + pu.h / 2 + bob);
 
+        // Glow
+        ctx.fillStyle = pu.type === 'speed' ? 'rgba(33, 150, 243, 0.2)' : 'rgba(0, 188, 212, 0.2)';
+        ctx.beginPath();
+        ctx.arc(0, 0, 16, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = pu.type === 'speed' ? 'rgba(33, 150, 243, 0.9)' : 'rgba(0, 188, 212, 0.9)';
+        ctx.beginPath();
+        ctx.arc(0, 0, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = pu.type === 'speed' ? '#1565C0' : '#00838F';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
         if (pu.type === 'speed') {
-            ctx.fillStyle = 'rgba(33, 150, 243, 0.8)';
-            ctx.beginPath();
-            ctx.arc(0, 0, 10, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#1565C0';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            // Lightning bolt
             ctx.fillStyle = '#FFD700';
             ctx.beginPath();
-            ctx.moveTo(-3, -6);
-            ctx.lineTo(2, -1);
-            ctx.lineTo(-1, -1);
-            ctx.lineTo(3, 6);
-            ctx.lineTo(-2, 1);
-            ctx.lineTo(1, 1);
+            ctx.moveTo(-4, -8); ctx.lineTo(3, -2); ctx.lineTo(-1, -1);
+            ctx.lineTo(4, 8); ctx.lineTo(-3, 2); ctx.lineTo(1, 1);
             ctx.closePath();
             ctx.fill();
         } else {
-            ctx.fillStyle = 'rgba(0, 188, 212, 0.8)';
-            ctx.beginPath();
-            ctx.arc(0, 0, 10, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#00838F';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            // Snowflake
             ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 1.5;
+            ctx.lineWidth = 2;
             for (let a = 0; a < 6; a++) {
                 const angle = a * Math.PI / 3;
                 ctx.beginPath();
                 ctx.moveTo(0, 0);
-                ctx.lineTo(Math.cos(angle) * 6, Math.sin(angle) * 6);
+                ctx.lineTo(Math.cos(angle) * 7, Math.sin(angle) * 7);
                 ctx.stroke();
             }
         }
         ctx.restore();
     });
 
-    // Render Francisco
+    // Render shadows
+    renderShadow(GAME.francisco.x, GAME.francisco.y, GAME.francisco.w, GAME.francisco.h);
+    renderShadow(GAME.player.x, GAME.player.y, GAME.player.w, GAME.player.h);
+
     renderFrancisco();
-
-    // Render Player
     renderPlayer();
-
-    // Render HUD
     renderHUD();
+    ctx.restore();
+}
 
+function renderShadow(x, y, w, h) {
+    const ctx = GAME.ctx;
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.beginPath();
+    ctx.ellipse(x + w / 2, y + h + 2, w / 2 + 2, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
 }
 
 function renderRestaurant() {
     const ctx = GAME.ctx;
 
-    // Floor
+    // Floor - warm restaurant tile
     ctx.fillStyle = '#F5E6CC';
     ctx.fillRect(0, 0, GAME_W, GAME_H);
 
-    // Checkerboard strip near counter
+    // Checkerboard strip (Steak 'n' Shake signature)
     for (let i = 0; i < GAME_W / 15; i++) {
         for (let j = 0; j < 2; j++) {
             ctx.fillStyle = (i + j) % 2 === 0 ? '#333' : '#eee';
@@ -659,8 +629,8 @@ function renderRestaurant() {
         }
     }
 
-    // Floor tiles (subtle)
-    ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+    // Floor tiles
+    ctx.strokeStyle = 'rgba(0,0,0,0.04)';
     ctx.lineWidth = 0.5;
     for (let x = 0; x < GAME_W; x += 40) {
         ctx.beginPath(); ctx.moveTo(x, 120); ctx.lineTo(x, GAME_H); ctx.stroke();
@@ -669,88 +639,137 @@ function renderRestaurant() {
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(GAME_W, y); ctx.stroke();
     }
 
-    // Walls
-    ctx.fillStyle = '#5C3A1E';
+    // Walls (thicker, darker)
+    ctx.fillStyle = '#4A2810';
     WALLS.forEach(w => ctx.fillRect(w.x, w.y, w.w, w.h));
 
-    // Kitchen door (gap in top wall)
-    ctx.fillStyle = '#3a3a3a';
-    ctx.fillRect(GAME_W / 2 - 25, 0, 50, 12);
+    // Wall trim
+    ctx.fillStyle = '#6B3A1F';
+    ctx.fillRect(10, 10, GAME_W - 20, 3);
+    ctx.fillRect(10, GAME_H - 13, GAME_W - 20, 3);
+
+    // Kitchen door
+    ctx.fillStyle = '#555';
+    ctx.fillRect(GAME_W / 2 - 30, 0, 60, 12);
     ctx.fillStyle = '#888';
-    ctx.fillRect(GAME_W / 2 - 20, 2, 40, 8);
-    ctx.fillStyle = '#ccc';
-    ctx.font = '6px Courier New';
+    ctx.fillRect(GAME_W / 2 - 25, 2, 50, 8);
+    ctx.fillStyle = '#ddd';
+    ctx.font = 'bold 7px Arial';
     ctx.textAlign = 'center';
     ctx.fillText('KITCHEN', GAME_W / 2, 9);
 
-    // Entry door (bottom)
-    ctx.fillStyle = '#3a3a3a';
-    ctx.fillRect(GAME_W / 2 - 30, GAME_H - 12, 60, 12);
+    // Entry door
+    ctx.fillStyle = '#555';
+    ctx.fillRect(GAME_W / 2 - 35, GAME_H - 12, 70, 12);
     ctx.fillStyle = '#87CEEB';
-    ctx.fillRect(GAME_W / 2 - 25, GAME_H - 10, 50, 8);
+    ctx.globalAlpha = 0.7;
+    ctx.fillRect(GAME_W / 2 - 30, GAME_H - 10, 60, 8);
+    ctx.globalAlpha = 1;
 
     // Counter
-    ctx.fillStyle = '#888';
+    ctx.fillStyle = '#777';
     ctx.fillRect(COUNTER.x, COUNTER.y, COUNTER.w, COUNTER.h);
-    ctx.fillStyle = '#aaa';
-    ctx.fillRect(COUNTER.x + 2, COUNTER.y + 2, COUNTER.w - 4, COUNTER.h - 8);
-    // Counter edge
-    ctx.fillStyle = '#666';
-    ctx.fillRect(COUNTER.x, COUNTER.y + COUNTER.h - 5, COUNTER.w, 5);
+    ctx.fillStyle = '#999';
+    ctx.fillRect(COUNTER.x + 2, COUNTER.y + 2, COUNTER.w - 4, COUNTER.h - 10);
+    ctx.fillStyle = '#555';
+    ctx.fillRect(COUNTER.x, COUNTER.y + COUNTER.h - 6, COUNTER.w, 6);
+
+    // Steak 'n' Shake logo on counter
+    if (GAME.logoLoaded) {
+        const logoW = 90;
+        const logoH = 25;
+        ctx.drawImage(GAME.logo, GAME_W / 2 - logoW / 2, COUNTER.y + 4, logoW, logoH);
+    } else {
+        ctx.fillStyle = '#FF4444';
+        ctx.fillRect(GAME_W / 2 - 50, COUNTER.y + 5, 100, 18);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 10px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText("STEAK 'N' SHAKE", GAME_W / 2, COUNTER.y + 14);
+    }
 
     // Stools
     STOOLS.forEach(s => {
-        ctx.fillStyle = '#C0392B';
+        ctx.fillStyle = '#8B0000';
         ctx.beginPath();
-        ctx.arc(s.x, s.y, 8, 0, Math.PI * 2);
+        ctx.arc(s.x, s.y, 9, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = '#7B241C';
-        ctx.lineWidth = 1.5;
+        ctx.fillStyle = '#A52A2A';
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#666';
+        ctx.lineWidth = 1;
         ctx.stroke();
     });
 
-    // Booths
+    // Booths (more detailed)
     BOOTHS.forEach(b => {
-        // Seat
-        ctx.fillStyle = '#8B1A1A';
+        ctx.fillStyle = '#6B1515';
         ctx.fillRect(b.x, b.y, b.w, b.h);
+        // Cushion lines
+        ctx.strokeStyle = '#8B2020';
+        ctx.lineWidth = 1;
+        for (let ly = b.y + 10; ly < b.y + b.h; ly += 12) {
+            ctx.beginPath(); ctx.moveTo(b.x + 4, ly); ctx.lineTo(b.x + b.w - 4, ly); ctx.stroke();
+        }
         // Table surface
         ctx.fillStyle = '#D4A843';
-        ctx.fillRect(b.x + 8, b.y + 8, b.w - 16, b.h - 16);
+        ctx.fillRect(b.x + 10, b.y + 10, b.w - 20, b.h - 20);
         ctx.strokeStyle = '#8B6914';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(b.x + 8, b.y + 8, b.w - 16, b.h - 16);
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(b.x + 10, b.y + 10, b.w - 20, b.h - 20);
+        // Napkin holder
+        ctx.fillStyle = '#C0C0C0';
+        ctx.fillRect(b.x + b.w / 2 - 4, b.y + b.h / 2 - 3, 8, 6);
     });
 
-    // Tables
+    // Tables (more realistic)
     TABLES.forEach(t => {
-        // Shadow
-        ctx.fillStyle = 'rgba(0,0,0,0.1)';
+        ctx.fillStyle = 'rgba(0,0,0,0.12)';
         ctx.fillRect(t.x + 3, t.y + 3, t.w, t.h);
+        // Table legs
+        ctx.fillStyle = '#5C4033';
+        ctx.fillRect(t.x + 3, t.y + 3, 4, 4);
+        ctx.fillRect(t.x + t.w - 7, t.y + 3, 4, 4);
+        ctx.fillRect(t.x + 3, t.y + t.h - 7, 4, 4);
+        ctx.fillRect(t.x + t.w - 7, t.y + t.h - 7, 4, 4);
         // Table body
         ctx.fillStyle = '#8B6914';
         ctx.fillRect(t.x, t.y, t.w, t.h);
-        // Table top
         ctx.fillStyle = '#D4A843';
         ctx.fillRect(t.x + 3, t.y + 3, t.w - 6, t.h - 6);
+        // Napkin/condiments
+        ctx.fillStyle = '#C0C0C0';
+        ctx.fillRect(t.x + t.w / 2 - 3, t.y + t.h / 2 - 2, 6, 4);
+        ctx.fillStyle = '#CC0000';
+        ctx.beginPath();
+        ctx.arc(t.x + t.w / 2 + 10, t.y + t.h / 2, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath();
+        ctx.arc(t.x + t.w / 2 - 10, t.y + t.h / 2, 3, 0, Math.PI * 2);
+        ctx.fill();
 
-        // Chairs (small circles around tables)
-        ctx.fillStyle = '#654321';
-        // Top
-        ctx.beginPath(); ctx.arc(t.x + t.w / 2, t.y - 6, 5, 0, Math.PI * 2); ctx.fill();
-        // Bottom
-        ctx.beginPath(); ctx.arc(t.x + t.w / 2, t.y + t.h + 6, 5, 0, Math.PI * 2); ctx.fill();
+        // Chairs
+        ctx.fillStyle = '#5C4033';
+        ctx.beginPath(); ctx.arc(t.x + t.w / 2 - 10, t.y - 8, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(t.x + t.w / 2 + 10, t.y - 8, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(t.x + t.w / 2 - 10, t.y + t.h + 8, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(t.x + t.w / 2 + 10, t.y + t.h + 8, 6, 0, Math.PI * 2); ctx.fill();
+        // Chair cushions
+        ctx.fillStyle = '#8B2020';
+        ctx.beginPath(); ctx.arc(t.x + t.w / 2 - 10, t.y - 8, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(t.x + t.w / 2 + 10, t.y - 8, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(t.x + t.w / 2 - 10, t.y + t.h + 8, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(t.x + t.w / 2 + 10, t.y + t.h + 8, 4, 0, Math.PI * 2); ctx.fill();
     });
-
-    // Steak 'n' Shake sign on counter
-    ctx.fillStyle = '#FF4444';
-    ctx.fillRect(GAME_W / 2 - 50, COUNTER.y + 5, 100, 18);
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 10px Courier New';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText("STEAK 'N' SHAKE", GAME_W / 2, COUNTER.y + 14);
 }
+
+// ============================================
+// GTA-STYLE CHARACTER RENDERING
+// ============================================
 
 function renderPlayer() {
     const ctx = GAME.ctx;
@@ -758,74 +777,170 @@ function renderPlayer() {
     const cx = p.x + p.w / 2;
     const cy = p.y + p.h / 2;
     const bob = Math.sin(p.bobTimer) * 1.5;
+    const walkCycle = Math.sin(p.walkFrame) * 3;
+    const isMoving = Math.abs(GAME.input.dx) > 0.1 || Math.abs(GAME.input.dy) > 0.1 ||
+        GAME.keys['w'] || GAME.keys['s'] || GAME.keys['a'] || GAME.keys['d'] ||
+        GAME.keys['arrowup'] || GAME.keys['arrowdown'] || GAME.keys['arrowleft'] || GAME.keys['arrowright'];
 
     ctx.save();
     ctx.translate(cx, cy);
 
-    // Speed boost glow
+    // Speed boost aura
     if (GAME.activePowerup === 'speed') {
-        ctx.fillStyle = 'rgba(33, 150, 243, 0.2)';
+        ctx.fillStyle = 'rgba(33, 150, 243, 0.15)';
         ctx.beginPath();
-        ctx.arc(0, 0, 18, 0, Math.PI * 2);
+        ctx.arc(0, 0, 28, 0, Math.PI * 2);
         ctx.fill();
+        ctx.strokeStyle = 'rgba(33, 150, 243, 0.4)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
     }
 
-    // Body (black shirt)
-    ctx.fillStyle = '#222';
-    ctx.fillRect(-8, -2 + bob, 16, 16);
+    // LEGS (GTA top-down style)
+    ctx.fillStyle = '#1a1a5e'; // dark jeans
+    if (isMoving) {
+        // Walking animation - legs alternate
+        ctx.fillRect(-8, 8 + bob, 7, 14 + walkCycle);
+        ctx.fillRect(1, 8 + bob, 7, 14 - walkCycle);
+    } else {
+        ctx.fillRect(-8, 8 + bob, 7, 14);
+        ctx.fillRect(1, 8 + bob, 7, 14);
+    }
+    // Shoes
+    ctx.fillStyle = '#333';
+    const shoeOff1 = isMoving ? walkCycle : 0;
+    const shoeOff2 = isMoving ? -walkCycle : 0;
+    ctx.fillRect(-9, 20 + bob + shoeOff1, 8, 4);
+    ctx.fillRect(1, 20 + bob + shoeOff2, 8, 4);
 
-    // Apron (red)
+    // TORSO (black uniform shirt)
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(-12, -6 + bob, 24, 16);
+    // Shoulders
+    ctx.fillRect(-14, -4 + bob, 4, 8);
+    ctx.fillRect(10, -4 + bob, 4, 8);
+
+    // APRON (Steak 'n' Shake red)
     ctx.fillStyle = '#CC0000';
-    ctx.fillRect(-6, 2 + bob, 12, 10);
+    ctx.fillRect(-10, 0 + bob, 20, 10);
+    // Apron strings
+    ctx.strokeStyle = '#CC0000';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-10, 2 + bob);
+    ctx.lineTo(-14, 0 + bob);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(10, 2 + bob);
+    ctx.lineTo(14, 0 + bob);
+    ctx.stroke();
 
-    // Head
+    // ARMS
+    ctx.fillStyle = p.skinColor;
+    const armSwing = isMoving ? walkCycle * 0.6 : 0;
+    // Left arm
+    ctx.save();
+    ctx.translate(-14, -2 + bob);
+    ctx.rotate(armSwing * 0.05);
+    ctx.fillRect(-2, 0, 5, 12);
+    ctx.restore();
+    // Right arm
+    ctx.save();
+    ctx.translate(9, -2 + bob);
+    ctx.rotate(-armSwing * 0.05);
+    ctx.fillRect(0, 0, 5, 12);
+    ctx.restore();
+
+    // HEAD (bigger, more detailed)
+    const headR = 11;
     ctx.fillStyle = p.skinColor;
     ctx.beginPath();
-    ctx.arc(0, -6 + bob, 8, 0, Math.PI * 2);
+    ctx.arc(0, -14 + bob, headR, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-    ctx.lineWidth = 0.5;
+
+    // Ear
+    ctx.beginPath();
+    ctx.arc(-headR + 1, -14 + bob, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(headR - 1, -14 + bob, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Head outline
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(0, -14 + bob, headR, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Hair
+    // HAIR
+    ctx.fillStyle = p.hairColor;
     if (GAME.selectedChar === 'chris') {
-        ctx.fillStyle = '#8B6914';
+        // Short neat hair
         ctx.beginPath();
-        ctx.arc(0, -9 + bob, 8, Math.PI, Math.PI * 2);
+        ctx.arc(0, -17 + bob, headR, Math.PI * 0.85, Math.PI * 2.15);
         ctx.fill();
+        // Side part
+        ctx.fillRect(-2, -26 + bob, 8, 4);
     } else {
-        ctx.fillStyle = '#1a1a1a';
+        // Jabu - short fade style
         ctx.beginPath();
-        ctx.arc(0, -8 + bob, 8.5, Math.PI * 0.8, Math.PI * 2.2);
+        ctx.arc(0, -15 + bob, headR + 1, Math.PI * 0.75, Math.PI * 2.25);
         ctx.fill();
     }
 
-    // Eyes
-    ctx.fillStyle = '#000';
-    const eyeOffX = p.dir.x * 2;
-    const eyeOffY = p.dir.y * 1;
+    // FACE
+    const eyeOffX = p.dir.x * 2.5;
+    const eyeOffY = p.dir.y * 1.5;
+
+    // Eye whites
+    ctx.fillStyle = '#fff';
     ctx.beginPath();
-    ctx.arc(-3 + eyeOffX, -6 + bob + eyeOffY, 1.2, 0, Math.PI * 2);
+    ctx.ellipse(-4 + eyeOffX * 0.3, -15 + bob + eyeOffY * 0.3, 3, 2.5, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
-    ctx.arc(3 + eyeOffX, -6 + bob + eyeOffY, 1.2, 0, Math.PI * 2);
+    ctx.ellipse(4 + eyeOffX * 0.3, -15 + bob + eyeOffY * 0.3, 3, 2.5, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Smile
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 0.8;
+    // Pupils (follow direction)
+    ctx.fillStyle = '#2C1810';
     ctx.beginPath();
-    ctx.arc(0 + eyeOffX, -4 + bob + eyeOffY, 3, 0.1, Math.PI - 0.1);
+    ctx.arc(-4 + eyeOffX, -15 + bob + eyeOffY, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(4 + eyeOffX, -15 + bob + eyeOffY, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Eyebrows
+    ctx.strokeStyle = p.hairColor === '#1a1a1a' ? '#333' : '#6B4914';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-7, -19 + bob);
+    ctx.lineTo(-2, -18 + bob);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(7, -19 + bob);
+    ctx.lineTo(2, -18 + bob);
     ctx.stroke();
 
-    // Name tag
+    // Mouth
+    ctx.strokeStyle = '#8B4513';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(0, -11 + bob, 3, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+
+    // NAME TAG on shirt
     ctx.fillStyle = '#fff';
-    ctx.fillRect(-10, 5 + bob, 20, 7);
+    ctx.fillRect(-12, -2 + bob, 24, 8);
+    ctx.strokeStyle = '#ccc';
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(-12, -2 + bob, 24, 8);
     ctx.fillStyle = '#000';
-    ctx.font = '5px Courier New';
+    ctx.font = 'bold 6px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(p.name.toUpperCase(), 0, 8.5 + bob);
+    ctx.fillText(p.name.toUpperCase(), 0, 2 + bob);
 
     ctx.restore();
 }
@@ -835,94 +950,176 @@ function renderFrancisco() {
     const f = GAME.francisco;
     const cx = f.x + f.w / 2;
     const cy = f.y + f.h / 2;
+    const frozen = GAME.activePowerup === 'freeze';
+    const breathe = Math.sin(GAME.elapsed * 2) * 1;
 
     ctx.save();
     ctx.translate(cx, cy);
 
-    // Freeze effect
-    if (GAME.activePowerup === 'freeze') {
-        ctx.fillStyle = 'rgba(0, 188, 212, 0.3)';
+    // Freeze aura
+    if (frozen) {
+        ctx.fillStyle = 'rgba(0, 188, 212, 0.25)';
         ctx.beginPath();
-        ctx.arc(0, 0, 22, 0, Math.PI * 2);
+        ctx.arc(0, 0, 34, 0, Math.PI * 2);
+        ctx.fill();
+        // Ice crystals
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.lineWidth = 2;
+        for (let a = 0; a < 8; a++) {
+            const angle = a * Math.PI / 4 + GAME.elapsed;
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(angle) * 26, Math.sin(angle) * 26);
+            ctx.lineTo(Math.cos(angle) * 32, Math.sin(angle) * 32);
+            ctx.stroke();
+        }
+    }
+
+    // LEGS (bigger, heavier build)
+    ctx.fillStyle = frozen ? '#5A7A8A' : '#3D2B1F';
+    ctx.fillRect(-10, 10 + breathe, 9, 16);
+    ctx.fillRect(1, 10 + breathe, 9, 16);
+    // Boots
+    ctx.fillStyle = frozen ? '#4A6A7A' : '#222';
+    ctx.fillRect(-11, 24 + breathe, 10, 5);
+    ctx.fillRect(1, 24 + breathe, 10, 5);
+
+    // TORSO (big guy, dark jacket)
+    ctx.fillStyle = frozen ? '#5A7A8A' : '#2E3D2E';
+    ctx.fillRect(-16, -8 + breathe, 32, 20);
+    // Shoulders (wide)
+    ctx.fillRect(-18, -6 + breathe, 5, 10);
+    ctx.fillRect(13, -6 + breathe, 5, 10);
+
+    // Belt
+    ctx.fillStyle = frozen ? '#4A5A4A' : '#1a1a1a';
+    ctx.fillRect(-14, 8 + breathe, 28, 4);
+    ctx.fillStyle = frozen ? '#8A9A8A' : '#C0A000';
+    ctx.fillRect(-3, 8 + breathe, 6, 4); // buckle
+
+    // ARMS (thick)
+    ctx.fillStyle = frozen ? '#7A9AAA' : '#D2A06C';
+    ctx.fillRect(-18, -4 + breathe, 6, 14);
+    ctx.fillRect(12, -4 + breathe, 6, 14);
+    // Hands
+    ctx.fillRect(-19, 8 + breathe, 7, 6);
+    ctx.fillRect(12, 8 + breathe, 7, 6);
+
+    // HEAD (big, intimidating)
+    const headR = 14;
+    ctx.fillStyle = frozen ? '#8AACB8' : '#D2A06C';
+    ctx.beginPath();
+    ctx.arc(0, -18 + breathe, headR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Ears
+    ctx.beginPath();
+    ctx.arc(-headR + 1, -18 + breathe, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(headR - 1, -18 + breathe, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Gray/white hair (balding)
+    ctx.fillStyle = frozen ? '#AAC0CC' : '#999';
+    ctx.beginPath();
+    ctx.arc(0, -22 + breathe, headR - 1, Math.PI * 0.95, Math.PI * 2.05);
+    ctx.fill();
+    // Bald spot
+    ctx.fillStyle = frozen ? '#8AACB8' : '#D2A06C';
+    ctx.beginPath();
+    ctx.arc(0, -25 + breathe, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // EYES (menacing)
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.ellipse(-5, -19 + breathe, 4, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(5, -19 + breathe, 4, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Pupils (staring at player)
+    const dirToPlayer = GAME.player ? {
+        x: (GAME.player.x + GAME.player.w / 2 - (f.x + f.w / 2)),
+        y: (GAME.player.y + GAME.player.h / 2 - (f.y + f.h / 2))
+    } : { x: 0, y: 1 };
+    const dirMag = Math.sqrt(dirToPlayer.x * dirToPlayer.x + dirToPlayer.y * dirToPlayer.y) || 1;
+    const eX = (dirToPlayer.x / dirMag) * 2;
+    const eY = (dirToPlayer.y / dirMag) * 1.5;
+
+    ctx.fillStyle = '#1a0000';
+    ctx.beginPath();
+    ctx.arc(-5 + eX, -19 + breathe + eY, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(5 + eX, -19 + breathe + eY, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Red glint in eyes
+    const redIntensity = Math.min(1, GAME.difficulty * 0.12);
+    if (redIntensity > 0 && !frozen) {
+        ctx.fillStyle = `rgba(255, 0, 0, ${redIntensity * 0.7})`;
+        ctx.beginPath();
+        ctx.arc(-5 + eX, -19 + breathe + eY, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(5 + eX, -19 + breathe + eY, 1.2, 0, Math.PI * 2);
         ctx.fill();
     }
 
-    // Body (dark green shirt)
-    ctx.fillStyle = GAME.activePowerup === 'freeze' ? '#6699AA' : '#2E4A2E';
-    ctx.fillRect(-10, -4, 20, 20);
-
-    // Head
-    ctx.fillStyle = GAME.activePowerup === 'freeze' ? '#8AACB8' : '#D2A06C';
+    // Angry eyebrows
+    ctx.strokeStyle = frozen ? '#667' : '#444';
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.arc(0, -8, 10, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-    ctx.lineWidth = 0.5;
-    ctx.stroke();
-
-    // Gray hair
-    ctx.fillStyle = '#999';
-    ctx.beginPath();
-    ctx.arc(0, -12, 10, Math.PI * 0.9, Math.PI * 2.1);
-    ctx.fill();
-
-    // Eyebrows (angry/creepy)
-    ctx.strokeStyle = '#555';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(-6, -12);
-    ctx.lineTo(-2, -10);
+    ctx.moveTo(-9, -25 + breathe);
+    ctx.lineTo(-2, -22 + breathe);
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(6, -12);
-    ctx.lineTo(2, -10);
+    ctx.moveTo(9, -25 + breathe);
+    ctx.lineTo(2, -22 + breathe);
     ctx.stroke();
 
-    // Eyes (beady)
-    ctx.fillStyle = '#000';
+    // BIG MUSTACHE
+    ctx.fillStyle = frozen ? '#556' : '#333';
     ctx.beginPath();
-    ctx.arc(-3, -8, 1.8, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(3, -8, 1.8, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Red eye glint (gets more intense with difficulty)
-    const redIntensity = Math.min(1, GAME.difficulty * 0.1);
-    ctx.fillStyle = `rgba(255, 0, 0, ${redIntensity * 0.6})`;
-    ctx.beginPath();
-    ctx.arc(-3, -8, 1, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(3, -8, 1, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Mustache
-    ctx.fillStyle = '#444';
-    ctx.beginPath();
-    ctx.moveTo(-6, -5);
-    ctx.quadraticCurveTo(-3, -2, 0, -4);
-    ctx.quadraticCurveTo(3, -2, 6, -5);
-    ctx.quadraticCurveTo(3, -1, 0, -2);
-    ctx.quadraticCurveTo(-3, -1, -6, -5);
+    ctx.moveTo(-10, -14 + breathe);
+    ctx.quadraticCurveTo(-5, -9 + breathe, 0, -12 + breathe);
+    ctx.quadraticCurveTo(5, -9 + breathe, 10, -14 + breathe);
+    ctx.quadraticCurveTo(5, -8 + breathe, 0, -10 + breathe);
+    ctx.quadraticCurveTo(-5, -8 + breathe, -10, -14 + breathe);
     ctx.fill();
 
     // Creepy grin
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = frozen ? '#556' : '#222';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.arc(0, -3, 4, 0.2, Math.PI - 0.2);
+    ctx.arc(0, -10 + breathe, 5, 0.15, Math.PI - 0.15);
     ctx.stroke();
+    // Teeth
+    ctx.fillStyle = '#FFFFCC';
+    ctx.fillRect(-4, -10 + breathe, 8, 3);
+    ctx.strokeStyle = frozen ? '#556' : '#222';
+    ctx.lineWidth = 0.5;
+    for (let tx = -3; tx <= 3; tx += 2) {
+        ctx.beginPath();
+        ctx.moveTo(tx, -10 + breathe);
+        ctx.lineTo(tx, -7 + breathe);
+        ctx.stroke();
+    }
 
-    // Anger lines (increase with difficulty)
-    if (GAME.difficulty >= 2) {
-        ctx.strokeStyle = `rgba(255, 0, 0, ${Math.min(0.7, GAME.difficulty * 0.08)})`;
-        ctx.lineWidth = 1;
-        for (let i = 0; i < Math.min(4, GAME.difficulty); i++) {
-            const angle = (i / 4) * Math.PI * 2 + GAME.elapsed * 2;
+    // Anger lines (radiate outward with difficulty)
+    if (GAME.difficulty >= 2 && !frozen) {
+        ctx.strokeStyle = `rgba(255, 50, 0, ${Math.min(0.6, GAME.difficulty * 0.06)})`;
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < Math.min(6, GAME.difficulty); i++) {
+            const angle = (i / 6) * Math.PI * 2 + GAME.elapsed * 1.5;
             ctx.beginPath();
-            ctx.moveTo(Math.cos(angle) * 13, -8 + Math.sin(angle) * 13);
-            ctx.lineTo(Math.cos(angle) * 17, -8 + Math.sin(angle) * 17);
+            ctx.moveTo(Math.cos(angle) * 18, -18 + Math.sin(angle) * 18);
+            ctx.lineTo(Math.cos(angle) * 24, -18 + Math.sin(angle) * 24);
             ctx.stroke();
         }
     }
@@ -933,57 +1130,60 @@ function renderFrancisco() {
 function renderHUD() {
     const ctx = GAME.ctx;
 
-    // HUD background
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-    ctx.fillRect(0, 0, GAME_W, 30);
+    // HUD background - darker, more GTA style
+    const grad = ctx.createLinearGradient(0, 0, 0, 35);
+    grad.addColorStop(0, 'rgba(0, 0, 0, 0.8)');
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0.4)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, GAME_W, 35);
 
     // Score
     ctx.fillStyle = '#4CAF50';
-    ctx.font = 'bold 16px Courier New';
+    ctx.font = 'bold 18px Arial';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText('$' + GAME.score, 15, 16);
+    ctx.fillText('$' + GAME.score, 15, 18);
 
     // Time
     const mins = Math.floor(GAME.elapsed / 60);
     const secs = Math.floor(GAME.elapsed % 60);
-    ctx.fillStyle = '#fff';
-    ctx.font = '12px Courier New';
+    ctx.fillStyle = '#ddd';
+    ctx.font = '13px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText(mins + ':' + secs.toString().padStart(2, '0'), GAME_W / 2, 16);
+    ctx.fillText(mins + ':' + secs.toString().padStart(2, '0'), GAME_W / 2, 18);
 
     // High score
     ctx.fillStyle = '#FFD700';
-    ctx.font = '11px Courier New';
+    ctx.font = '12px Arial';
     ctx.textAlign = 'right';
-    ctx.fillText('HI:$' + GAME.highScore, GAME_W - 15, 16);
+    ctx.fillText('BEST: $' + GAME.highScore, GAME_W - 15, 18);
 
     // Powerup indicator
     if (GAME.activePowerup) {
-        const barW = 80;
-        const barH = 6;
+        const barW = 100;
+        const barH = 8;
         const barX = GAME_W / 2 - barW / 2;
-        const barY = 33;
+        const barY = 38;
         const maxTime = GAME.activePowerup === 'speed' ? 4 : 3;
         const pct = GAME.powerupTimer / maxTime;
 
-        ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.fillRect(barX, barY, barW, barH);
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
         ctx.fillStyle = GAME.activePowerup === 'speed' ? '#2196F3' : '#00BCD4';
         ctx.fillRect(barX, barY, barW * pct, barH);
 
         ctx.fillStyle = '#fff';
-        ctx.font = '8px Courier New';
+        ctx.font = 'bold 9px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText(GAME.activePowerup === 'speed' ? 'SPEED BOOST!' : 'FRANCISCO FROZEN!', GAME_W / 2, barY + barH + 10);
+        ctx.fillText(GAME.activePowerup === 'speed' ? 'SPEED BOOST!' : 'FRANCISCO FROZEN!', GAME_W / 2, barY + barH + 12);
     }
 
     // Francisco speed warning
-    if (GAME.difficulty >= 5) {
-        ctx.fillStyle = `rgba(255, 0, 0, ${0.3 + Math.sin(GAME.elapsed * 5) * 0.3})`;
-        ctx.font = '9px Courier New';
+    if (GAME.difficulty >= 4) {
+        ctx.fillStyle = `rgba(255, 0, 0, ${0.4 + Math.sin(GAME.elapsed * 4) * 0.3})`;
+        ctx.font = 'bold 10px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('FRANCISCO IS GETTING FASTER!', GAME_W / 2, GAME_H - 20);
+        ctx.fillText('! FRANCISCO IS SPEEDING UP !', GAME_W / 2, GAME_H - 22);
     }
 }
 
@@ -993,11 +1193,7 @@ function renderHUD() {
 
 function initAudio() {
     if (GAME.audioCtx) return;
-    try {
-        GAME.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    } catch (e) {
-        // No audio support
-    }
+    try { GAME.audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
 }
 
 function playSound(type) {
@@ -1008,33 +1204,26 @@ function playSound(type) {
         osc.connect(gain);
         gain.connect(GAME.audioCtx.destination);
         gain.gain.value = 0.15;
-
         const now = GAME.audioCtx.currentTime;
 
         if (type === 'collect') {
             osc.frequency.setValueAtTime(400, now);
             osc.frequency.linearRampToValueAtTime(800, now + 0.1);
             gain.gain.linearRampToValueAtTime(0, now + 0.15);
-            osc.start(now);
-            osc.stop(now + 0.15);
+            osc.start(now); osc.stop(now + 0.15);
         } else if (type === 'powerup') {
             osc.frequency.setValueAtTime(500, now);
-            osc.frequency.linearRampToValueAtTime(1000, now + 0.1);
             osc.frequency.linearRampToValueAtTime(1200, now + 0.2);
             gain.gain.linearRampToValueAtTime(0, now + 0.25);
-            osc.start(now);
-            osc.stop(now + 0.25);
+            osc.start(now); osc.stop(now + 0.25);
         } else if (type === 'gameover') {
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(600, now);
             osc.frequency.linearRampToValueAtTime(100, now + 0.5);
             gain.gain.linearRampToValueAtTime(0, now + 0.6);
-            osc.start(now);
-            osc.stop(now + 0.6);
+            osc.start(now); osc.stop(now + 0.6);
         }
-    } catch (e) {
-        // Ignore audio errors
-    }
+    } catch (e) {}
 }
 
 // ============================================
