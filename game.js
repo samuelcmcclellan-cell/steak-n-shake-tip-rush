@@ -477,12 +477,26 @@ function spawnOrder() {
 
     const idx = available[Math.floor(Math.random() * available.length)];
     const table = ALL_SEATING[idx];
-    // Tip value: mostly $2, sometimes $5
-    const tipValue = Math.random() < 0.3 ? 5 : 2;
-    // Timer: orders expire faster as game gets harder
-    const timer = Math.max(8, 15 - GAME.difficulty * 0.5);
 
-    GAME.orders.push({ table, tableIdx: idx, tipValue, timer, maxTimer: timer });
+    // Order types: regular burger ($2), shake combo ($5), or FRISCO MELT ($10!)
+    const roll = Math.random();
+    let tipValue, orderType;
+    if (roll < 0.15) {
+        tipValue = 10;
+        orderType = 'frisco';  // Frisco Melt - the signature dish!
+    } else if (roll < 0.4) {
+        tipValue = 5;
+        orderType = 'combo';
+    } else {
+        tipValue = 2;
+        orderType = 'burger';
+    }
+
+    // Timer: orders expire faster as game gets harder. Frisco Melt has shorter timer (high reward, high pressure)
+    let timer = Math.max(8, 15 - GAME.difficulty * 0.5);
+    if (orderType === 'frisco') timer = Math.max(6, 12 - GAME.difficulty * 0.5);
+
+    GAME.orders.push({ table, tableIdx: idx, tipValue, timer, maxTimer: timer, orderType });
 }
 
 function spawnTipNearTable(table, value) {
@@ -534,36 +548,60 @@ function render() {
     GAME.orders.forEach(order => {
         const t = order.table;
         const cx = t.x + t.w / 2;
-        const cy = t.y - 14;
+        const cy = t.y - 16;
         const pct = order.timer / order.maxTimer;
         const flash = Math.sin(GAME.elapsed * 6) > 0;
+        const isFrisco = order.orderType === 'frisco';
 
-        // Exclamation bubble
-        ctx.fillStyle = flash ? '#FF6B35' : '#FF9800';
+        // Frisco Melt gets a golden glow
+        if (isFrisco) {
+            ctx.fillStyle = `rgba(255, 215, 0, ${0.15 + Math.sin(GAME.elapsed * 4) * 0.1})`;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Order bubble - Frisco Melt is gold, others orange
+        const bubbleR = isFrisco ? 14 : 11;
+        if (isFrisco) {
+            ctx.fillStyle = flash ? '#FFD700' : '#FFA000';
+        } else {
+            ctx.fillStyle = flash ? '#FF6B35' : '#FF9800';
+        }
         ctx.beginPath();
-        ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+        ctx.arc(cx, cy, bubbleR, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = '#E65100';
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = isFrisco ? '#B8860B' : '#E65100';
+        ctx.lineWidth = isFrisco ? 2 : 1.5;
         ctx.stroke();
 
-        // Food icon
+        // Food icon & label
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 11px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('🍔', cx, cy);
+        if (isFrisco) {
+            ctx.font = 'bold 9px Arial';
+            ctx.fillText('FRISCO', cx, cy - 3);
+            ctx.fillText('MELT', cx, cy + 6);
+        } else if (order.orderType === 'combo') {
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText('🍔', cx, cy);
+        } else {
+            ctx.font = 'bold 11px Arial';
+            ctx.fillText('🍔', cx, cy);
+        }
 
         // Timer bar
+        const barW = isFrisco ? 36 : 30;
         ctx.fillStyle = 'rgba(0,0,0,0.4)';
-        ctx.fillRect(cx - 15, cy + 12, 30, 4);
+        ctx.fillRect(cx - barW / 2, cy + bubbleR + 3, barW, 5);
         ctx.fillStyle = pct > 0.3 ? '#4CAF50' : '#FF5252';
-        ctx.fillRect(cx - 15, cy + 12, 30 * pct, 4);
+        ctx.fillRect(cx - barW / 2, cy + bubbleR + 3, barW * pct, 5);
 
         // Tip value label
-        ctx.fillStyle = '#FFD700';
-        ctx.font = 'bold 8px Arial';
-        ctx.fillText('$' + order.tipValue, cx, cy + 22);
+        ctx.fillStyle = isFrisco ? '#FFD700' : '#FFD700';
+        ctx.font = isFrisco ? 'bold 11px Arial' : 'bold 9px Arial';
+        ctx.fillText('$' + order.tipValue, cx, cy + bubbleR + 16);
     });
 
     // Floor glow under tips
@@ -648,10 +686,13 @@ function render() {
         ctx.fillStyle = `rgba(76, 175, 80, ${flash})`;
         ctx.fillRect(FOOD_PICKUP.x, FOOD_PICKUP.y, FOOD_PICKUP.w, FOOD_PICKUP.h);
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 8px Arial';
+        ctx.font = 'bold 10px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('PICK UP FOOD', FOOD_PICKUP.x + FOOD_PICKUP.w / 2, FOOD_PICKUP.y + FOOD_PICKUP.h / 2);
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 4;
+        ctx.fillText('⬆ GRAB FOOD ⬆', FOOD_PICKUP.x + FOOD_PICKUP.w / 2, FOOD_PICKUP.y + FOOD_PICKUP.h / 2);
+        ctx.shadowBlur = 0;
     }
 
     // Shadows
@@ -1085,14 +1126,16 @@ function renderFrancisco() {
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(0, -20 + breathe, headR, 0, Math.PI * 2); ctx.stroke();
 
-    // GRAY/WHITE thin hair (very bald)
-    ctx.fillStyle = '#AAA';
+    // BLACK HAIR (slicked back, thick on top)
+    ctx.fillStyle = '#111';
     ctx.beginPath();
-    ctx.arc(0, -25 + breathe, headR - 3, Math.PI * 1.1, Math.PI * 1.9);
+    ctx.arc(0, -24 + breathe, headR, Math.PI * 0.85, Math.PI * 2.15);
     ctx.fill();
-    // Side wisps
-    ctx.fillRect(-headR + 2, -24 + breathe, 5, 8);
-    ctx.fillRect(headR - 7, -24 + breathe, 5, 8);
+    // Side hair (full, dark)
+    ctx.fillRect(-headR + 1, -26 + breathe, 6, 12);
+    ctx.fillRect(headR - 7, -26 + breathe, 6, 12);
+    // Slicked back top
+    ctx.fillRect(-8, -35 + breathe, 16, 6);
 
     // WRINKLES (forehead lines)
     ctx.strokeStyle = 'rgba(0,0,0,0.15)';
@@ -1140,24 +1183,28 @@ function renderFrancisco() {
         ctx.beginPath(); ctx.arc(6 + eX, -21 + breathe + eY, 1.2, 0, Math.PI * 2); ctx.fill();
     }
 
-    // Heavy angry eyebrows
-    ctx.strokeStyle = '#555';
-    ctx.lineWidth = 3;
+    // Heavy angry BLACK eyebrows
+    ctx.strokeStyle = '#111';
+    ctx.lineWidth = 3.5;
     ctx.beginPath(); ctx.moveTo(-11, -27 + breathe); ctx.lineTo(-2, -24 + breathe); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(11, -27 + breathe); ctx.lineTo(2, -24 + breathe); ctx.stroke();
 
-    // BIG THICK MUSTACHE
-    ctx.fillStyle = '#555';
+    // HUGE BLACK MUSTACHE (Francisco's signature look)
+    ctx.fillStyle = '#111';
+    // Main body - extra wide and thick
     ctx.beginPath();
-    ctx.moveTo(-12, -16 + breathe);
-    ctx.quadraticCurveTo(-6, -11 + breathe, 0, -14 + breathe);
-    ctx.quadraticCurveTo(6, -11 + breathe, 12, -16 + breathe);
-    ctx.quadraticCurveTo(6, -9 + breathe, 0, -12 + breathe);
-    ctx.quadraticCurveTo(-6, -9 + breathe, -12, -16 + breathe);
+    ctx.moveTo(-16, -16 + breathe);
+    ctx.quadraticCurveTo(-8, -9 + breathe, 0, -13 + breathe);
+    ctx.quadraticCurveTo(8, -9 + breathe, 16, -16 + breathe);
+    ctx.quadraticCurveTo(8, -7 + breathe, 0, -10 + breathe);
+    ctx.quadraticCurveTo(-8, -7 + breathe, -16, -16 + breathe);
     ctx.fill();
-    // Mustache curls at ends
-    ctx.beginPath(); ctx.arc(-12, -15 + breathe, 2, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(12, -15 + breathe, 2, 0, Math.PI * 2); ctx.fill();
+    // Big curled ends
+    ctx.beginPath(); ctx.arc(-16, -14 + breathe, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(16, -14 + breathe, 3.5, 0, Math.PI * 2); ctx.fill();
+    // Curl tips pointing up
+    ctx.beginPath(); ctx.arc(-18, -16 + breathe, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(18, -16 + breathe, 2, 0, Math.PI * 2); ctx.fill();
 
     // Creepy smile with teeth
     ctx.strokeStyle = '#333';
@@ -1198,75 +1245,100 @@ function renderFrancisco() {
 function renderHUD() {
     const ctx = GAME.ctx;
 
-    const grad = ctx.createLinearGradient(0, 0, 0, 38);
-    grad.addColorStop(0, 'rgba(0, 0, 0, 0.85)');
-    grad.addColorStop(1, 'rgba(0, 0, 0, 0.4)');
+    // HUD bar - bigger, bolder
+    const grad = ctx.createLinearGradient(0, 0, 0, 44);
+    grad.addColorStop(0, 'rgba(0, 0, 0, 0.9)');
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0.5)');
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, GAME_W, 38);
+    ctx.fillRect(0, 0, GAME_W, 44);
+    // Red accent line
+    ctx.fillStyle = '#CC0000';
+    ctx.fillRect(0, 43, GAME_W, 2);
 
-    // Score
+    // Score - BIG
     ctx.fillStyle = '#4CAF50';
-    ctx.font = 'bold 18px Arial';
+    ctx.font = 'bold 24px Arial';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText('$' + GAME.score, 15, 14);
+    ctx.shadowColor = 'rgba(76, 175, 80, 0.4)';
+    ctx.shadowBlur = 8;
+    ctx.fillText('$' + GAME.score, 15, 16);
+    ctx.shadowBlur = 0;
 
     // Carrying food indicator
     if (GAME.player && GAME.player.carryingFood) {
         ctx.fillStyle = '#FF9800';
+        ctx.font = 'bold 12px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText('🍔 DELIVERING...', 15, 35);
+    } else if (GAME.player) {
+        ctx.fillStyle = '#999';
         ctx.font = 'bold 10px Arial';
         ctx.textAlign = 'left';
-        ctx.fillText('🍔 DELIVERING...', 15, 30);
-    } else if (GAME.player) {
-        ctx.fillStyle = '#888';
-        ctx.font = '9px Arial';
-        ctx.textAlign = 'left';
-        ctx.fillText('Go to counter for food', 15, 30);
+        ctx.fillText('GO TO COUNTER', 15, 35);
     }
 
-    // Time
+    // Time - bigger
     const mins = Math.floor(GAME.elapsed / 60);
     const secs = Math.floor(GAME.elapsed % 60);
-    ctx.fillStyle = '#ddd';
-    ctx.font = '13px Arial';
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 16px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText(mins + ':' + secs.toString().padStart(2, '0'), GAME_W / 2, 14);
+    ctx.fillText(mins + ':' + secs.toString().padStart(2, '0'), GAME_W / 2, 16);
 
     // Orders waiting
     ctx.fillStyle = '#FF9800';
-    ctx.font = '10px Arial';
-    ctx.fillText(GAME.orders.length + ' orders', GAME_W / 2, 30);
+    ctx.font = 'bold 12px Arial';
+    ctx.fillText(GAME.orders.length + ' ORDERS', GAME_W / 2, 35);
 
     // High score
     ctx.fillStyle = '#FFD700';
-    ctx.font = '12px Arial';
+    ctx.font = 'bold 14px Arial';
     ctx.textAlign = 'right';
-    ctx.fillText('BEST: $' + GAME.highScore, GAME_W - 15, 14);
+    ctx.shadowColor = 'rgba(255, 215, 0, 0.3)';
+    ctx.shadowBlur = 6;
+    ctx.fillText('BEST: $' + GAME.highScore, GAME_W - 12, 16);
+    ctx.shadowBlur = 0;
 
-    // Milkshake timer
+    // Frisco Melt order count in HUD
+    const friscoOrders = GAME.orders.filter(o => o.orderType === 'frisco').length;
+    if (friscoOrders > 0) {
+        ctx.fillStyle = '#FFD700';
+        ctx.font = 'bold 11px Arial';
+        ctx.textAlign = 'right';
+        ctx.fillText('⭐ ' + friscoOrders + ' FRISCO MELT!', GAME_W - 12, 35);
+    }
+
+    // Milkshake timer bar
     if (GAME.milkshakeTimer > 0) {
-        const barW = 100;
-        const barH = 8;
+        const barW = 120;
+        const barH = 10;
         const barX = GAME_W / 2 - barW / 2;
-        const barY = 40;
+        const barY = 48;
         const pct = GAME.milkshakeTimer / 5;
 
-        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
         ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
         ctx.fillStyle = '#FF69B4';
         ctx.fillRect(barX, barY, barW * pct, barH);
+        ctx.strokeStyle = 'rgba(255, 105, 180, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(barX - 1, barY - 1, barW + 2, barH + 2);
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 9px Arial';
+        ctx.font = 'bold 11px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('🥤 MILKSHAKE SPEED!', GAME_W / 2, barY + barH + 12);
+        ctx.fillText('🥤 MILKSHAKE SPEED!', GAME_W / 2, barY + barH + 14);
     }
 
-    // Francisco speed warning
+    // Francisco speed warning - bigger, scarier
     if (GAME.difficulty >= 3) {
-        ctx.fillStyle = `rgba(255, 0, 0, ${0.4 + Math.sin(GAME.elapsed * 4) * 0.3})`;
-        ctx.font = 'bold 10px Arial';
+        ctx.fillStyle = `rgba(255, 0, 0, ${0.5 + Math.sin(GAME.elapsed * 4) * 0.3})`;
+        ctx.font = 'bold 14px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('! FRANCISCO IS SPEEDING UP !', GAME_W / 2, GAME_H - 22);
+        ctx.shadowColor = 'rgba(255, 0, 0, 0.5)';
+        ctx.shadowBlur = 10;
+        ctx.fillText('⚠ FRANCISCO IS SPEEDING UP ⚠', GAME_W / 2, GAME_H - 22);
+        ctx.shadowBlur = 0;
     }
 }
 
