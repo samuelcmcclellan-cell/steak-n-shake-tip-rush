@@ -1309,79 +1309,131 @@ function renderFrancisco() {
     ctx.textBaseline = 'middle';
     ctx.fillText('FRANCISCO', 0, 7 + b);
 
-    // ===== HEAD (clean, simple, no stray marks) =====
+    // ===== HEAD =====
+    const R = 18; // head radius - bigger for more face room
+    const blink = Math.sin(GAME.elapsed * 3) > 0.97; // occasional blink
+    const headBob = Math.sin(GAME.elapsed * 2.5) * 0.8; // slight head bob animation
+
     // Neck
     ctx.fillStyle = S;
-    ctx.fillRect(-8, -12 + b, 16, 6);
+    ctx.fillRect(-9, -12 + b, 18, 8);
 
-    // Head circle
+    // Head (big round)
     ctx.fillStyle = S;
-    ctx.beginPath(); ctx.arc(0, -22 + b, 16, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, -24 + b + headBob, R, 0, Math.PI * 2); ctx.fill();
 
-    // Ears (small, tight to head)
-    ctx.beginPath(); ctx.arc(-15, -22 + b, 3.5, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(15, -22 + b, 3.5, 0, Math.PI * 2); ctx.fill();
+    // Cheeks (slightly puffed from grinning)
+    ctx.beginPath(); ctx.ellipse(-12, -20 + b + headBob, 8, 6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(12, -20 + b + headBob, 8, 6, 0, 0, Math.PI * 2); ctx.fill();
 
-    // SHORT BLACK HAIR on top only (not on sides, not long)
+    // Ears (small circles, skin-colored)
+    ctx.beginPath(); ctx.arc(-R + 1, -24 + b + headBob, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(R - 1, -24 + b + headBob, 4, 0, Math.PI * 2); ctx.fill();
+
+    // SHORT BLACK HAIR on top only
     ctx.fillStyle = '#0a0a0a';
     ctx.beginPath();
-    ctx.arc(0, -25 + b, 14, Math.PI * 1.05, Math.PI * 1.95);
+    ctx.arc(0, -28 + b + headBob, R - 2, Math.PI * 1.05, Math.PI * 1.95);
     ctx.fill();
 
-    // EYES (creepy wide open)
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.ellipse(-5.5, -24 + b, 4, 3, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(5.5, -24 + b, 4, 3, 0, 0, Math.PI * 2); ctx.fill();
-    // Pupils (track player)
-    const dp = GAME.player ? {
-        x: GAME.player.x + GAME.player.w / 2 - (f.x + f.w / 2),
-        y: GAME.player.y + GAME.player.h / 2 - (f.y + f.h / 2)
-    } : { x: 0, y: 1 };
-    const dm = Math.sqrt(dp.x * dp.x + dp.y * dp.y) || 1;
-    const ex = (dp.x / dm) * 2;
-    const ey = (dp.y / dm) * 1;
-    ctx.fillStyle = '#0a0000';
-    ctx.beginPath(); ctx.arc(-5.5 + ex, -24 + b + ey, 2, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(5.5 + ex, -24 + b + ey, 2, 0, Math.PI * 2); ctx.fill();
+    // Forehead wrinkles (subtle, animated - scrunch when close to player)
+    const fDist = GAME.player ? Math.sqrt(Math.pow(GAME.player.x - f.x, 2) + Math.pow(GAME.player.y - f.y, 2)) : 999;
+    const wrinkleAlpha = fDist < 150 ? 0.15 : 0.07;
+    ctx.strokeStyle = `rgba(0,0,0,${wrinkleAlpha})`;
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(-7, -33 + b + headBob); ctx.lineTo(7, -33 + b + headBob); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-6, -31 + b + headBob); ctx.lineTo(6, -31 + b + headBob); ctx.stroke();
 
-    // Eyebrows (arched, expressive)
+    // EYEBROWS (animated - raise when close to player)
+    const browRaise = fDist < 150 ? -2 : 0;
     ctx.strokeStyle = '#0a0a0a';
     ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.moveTo(-10, -29 + b); ctx.quadraticCurveTo(-5.5, -31 + b, -1, -29 + b); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(10, -29 + b); ctx.quadraticCurveTo(5.5, -31 + b, 1, -29 + b); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-12, -31 + b + headBob + browRaise); ctx.quadraticCurveTo(-6, -34 + b + headBob + browRaise, -1, -31 + b + headBob + browRaise); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(12, -31 + b + headBob + browRaise); ctx.quadraticCurveTo(6, -34 + b + headBob + browRaise, 1, -31 + b + headBob + browRaise); ctx.stroke();
 
-    // Nose
+    // EYES (creepy wide open, or blinking)
+    if (blink) {
+        // Blink - just lines
+        ctx.strokeStyle = '#0a0a0a';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(-9, -26 + b + headBob); ctx.lineTo(-3, -26 + b + headBob); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(3, -26 + b + headBob); ctx.lineTo(9, -26 + b + headBob); ctx.stroke();
+    } else {
+        // Eye whites (big, creepy)
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.ellipse(-6, -26 + b + headBob, 5, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(6, -26 + b + headBob, 5, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+        // Eye outlines
+        ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath(); ctx.ellipse(-6, -26 + b + headBob, 5, 3.5, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(6, -26 + b + headBob, 5, 3.5, 0, 0, Math.PI * 2); ctx.stroke();
+        // Pupils (track player, get bigger when close)
+        const dp = GAME.player ? {
+            x: GAME.player.x + GAME.player.w / 2 - (f.x + f.w / 2),
+            y: GAME.player.y + GAME.player.h / 2 - (f.y + f.h / 2)
+        } : { x: 0, y: 1 };
+        const dm = Math.sqrt(dp.x * dp.x + dp.y * dp.y) || 1;
+        const ex = (dp.x / dm) * 2.5;
+        const ey = (dp.y / dm) * 1.5;
+        const pupilR = fDist < 120 ? 2.8 : 2.2; // dilate when close
+        ctx.fillStyle = '#0a0000';
+        ctx.beginPath(); ctx.arc(-6 + ex, -26 + b + headBob + ey, pupilR, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(6 + ex, -26 + b + headBob + ey, pupilR, 0, Math.PI * 2); ctx.fill();
+        // Eye glint
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.beginPath(); ctx.arc(-5 + ex * 0.5, -27 + b + headBob, 1, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(7 + ex * 0.5, -27 + b + headBob, 1, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // NOSE (on the face, proportional)
     ctx.fillStyle = S;
-    ctx.beginPath(); ctx.ellipse(0, -18 + b, 3.5, 3, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, -20 + b + headBob, 3.5, 3, 0, 0, Math.PI * 2); ctx.fill();
+    // Nostrils
+    ctx.fillStyle = 'rgba(0,0,0,0.1)';
+    ctx.beginPath(); ctx.arc(-1.5, -19 + b + headBob, 1, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(1.5, -19 + b + headBob, 1, 0, Math.PI * 2); ctx.fill();
 
-    // CREEPY WIDE GRIN (drawn before mustache)
-    ctx.fillStyle = '#2a0a00';
-    ctx.beginPath(); ctx.arc(0, -12 + b, 8, 0.05, Math.PI - 0.05); ctx.fill();
-    // Teeth
+    // CREEPY WIDE GRIN (within the face bounds)
+    const grinWobble = Math.sin(GAME.elapsed * 4) * 0.5; // slight animated wobble
+    ctx.fillStyle = '#2a0800';
+    ctx.beginPath(); ctx.arc(0, -13 + b + headBob, 8, 0.05 + grinWobble * 0.02, Math.PI - 0.05 + grinWobble * 0.02); ctx.fill();
+    // Teeth (top row)
     ctx.fillStyle = '#FFFFEE';
-    ctx.fillRect(-7, -12 + b, 14, 4);
+    ctx.fillRect(-7, -13 + b + headBob, 14, 4);
     ctx.strokeStyle = '#ddd';
     ctx.lineWidth = 0.4;
     for (let tx = -6; tx <= 6; tx += 2) {
-        ctx.beginPath(); ctx.moveTo(tx, -12 + b); ctx.lineTo(tx, -8 + b); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(tx, -13 + b + headBob); ctx.lineTo(tx, -9 + b + headBob); ctx.stroke();
     }
+    // Bottom lip
+    ctx.fillStyle = '#9B6040';
+    ctx.beginPath(); ctx.ellipse(0, -6 + b + headBob, 6, 2, 0, 0, Math.PI); ctx.fill();
 
-    // HUGE HANDLEBAR MUSTACHE (drawn last, on top of everything)
+    // Laugh lines (subtle, within face)
+    ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+    ctx.lineWidth = 0.6;
+    ctx.beginPath(); ctx.moveTo(-8, -22 + b + headBob); ctx.quadraticCurveTo(-10, -17 + b + headBob, -8, -10 + b + headBob); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(8, -22 + b + headBob); ctx.quadraticCurveTo(10, -17 + b + headBob, 8, -10 + b + headBob); ctx.stroke();
+
+    // BIG HANDLEBAR MUSTACHE (on the face, between nose and mouth, stays within face width)
     ctx.fillStyle = '#050505';
+    // Main body - fits within face (max x = +-14)
     ctx.beginPath();
-    ctx.moveTo(-20, -16 + b);
-    ctx.quadraticCurveTo(-12, -9 + b, 0, -14 + b);
-    ctx.quadraticCurveTo(12, -9 + b, 20, -16 + b);
-    ctx.quadraticCurveTo(12, -7 + b, 0, -11 + b);
-    ctx.quadraticCurveTo(-12, -7 + b, -20, -16 + b);
+    ctx.moveTo(-14, -18 + b + headBob);
+    ctx.quadraticCurveTo(-8, -12 + b + headBob, 0, -16 + b + headBob);
+    ctx.quadraticCurveTo(8, -12 + b + headBob, 14, -18 + b + headBob);
+    ctx.quadraticCurveTo(8, -10 + b + headBob, 0, -13 + b + headBob);
+    ctx.quadraticCurveTo(-8, -10 + b + headBob, -14, -18 + b + headBob);
     ctx.fill();
-    // Handlebar curled ends
-    ctx.beginPath(); ctx.arc(-20, -13 + b, 4, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(20, -13 + b, 4, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(-22, -16 + b, 2.5, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(22, -16 + b, 2.5, 0, Math.PI * 2); ctx.fill();
-    // Thick center
-    ctx.beginPath(); ctx.ellipse(0, -14 + b, 7, 3, 0, 0, Math.PI * 2); ctx.fill();
+    // Curled ends (within face boundary)
+    ctx.beginPath(); ctx.arc(-13, -15 + b + headBob, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(13, -15 + b + headBob, 3, 0, Math.PI * 2); ctx.fill();
+    // Curl tips
+    ctx.beginPath(); ctx.arc(-14, -17 + b + headBob, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(14, -17 + b + headBob, 2, 0, Math.PI * 2); ctx.fill();
+    // Thick center under nose
+    ctx.beginPath(); ctx.ellipse(0, -17 + b + headBob, 5, 2.5, 0, 0, Math.PI * 2); ctx.fill();
 
     // ANGER AURA at high difficulty
     if (GAME.difficulty >= 2) {
