@@ -1394,13 +1394,7 @@ function renderFrancisco() {
     ctx.beginPath(); ctx.moveTo(-8, -30 + b); ctx.lineTo(8, -30 + b); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(-7, -28 + b); ctx.lineTo(7, -28 + b); ctx.stroke();
 
-    // Crow's feet (from smiling so much)
-    ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-    ctx.lineWidth = 0.5;
-    ctx.beginPath(); ctx.moveTo(-13, -24 + b); ctx.lineTo(-16, -26 + b); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-13, -22 + b); ctx.lineTo(-16, -22 + b); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(13, -24 + b); ctx.lineTo(16, -26 + b); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(13, -22 + b); ctx.lineTo(16, -22 + b); ctx.stroke();
+    // (crow's feet removed for cleaner look)
 
     // ── EYEBROWS (raised high - amused/laughing expression) ──
     ctx.fillStyle = '#0a0a0a';
