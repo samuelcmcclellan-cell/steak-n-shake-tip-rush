@@ -1184,11 +1184,10 @@ function renderFrancisco() {
     ctx.ellipse(0, -8 + b, 14, 8, 0, -0.3, Math.PI + 0.3);
     ctx.fill();
 
-    // Puffy cheeks
-    const cheekShade = '#7D5233';
+    // Puffy cheeks (kept higher on face, away from mustache)
     ctx.fillStyle = skin;
-    ctx.beginPath(); ctx.ellipse(-12, -18 + b, 8, 7, -0.1, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(12, -18 + b, 8, 7, 0.1, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-12, -20 + b, 7, 5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(12, -20 + b, 7, 5, 0, 0, Math.PI * 2); ctx.fill();
     // Cheek warmth (slight reddish tint)
     ctx.fillStyle = 'rgba(180, 80, 60, 0.08)';
     ctx.beginPath(); ctx.ellipse(-10, -17 + b, 5, 4, 0, 0, Math.PI * 2); ctx.fill();
@@ -1208,30 +1207,21 @@ function renderFrancisco() {
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(0, -22 + b, R, 0, Math.PI * 2); ctx.stroke();
 
-    // ── THICK BLACK HAIR (natural, full, wavy on top) ──
+    // ── THICK BLACK HAIR (only on TOP of head, not covering face) ──
     ctx.fillStyle = '#080808';
-    // Main hair mass covering top of head
+    // Hair covers only the upper hemisphere of the head
     ctx.beginPath();
-    ctx.arc(0, -26 + b, R + 2, Math.PI * 0.72, Math.PI * 2.28);
+    ctx.arc(0, -22 + b, R + 2, Math.PI * 0.95, Math.PI * 2.05);
     ctx.fill();
     // Volume / wave on top
     ctx.beginPath();
-    ctx.moveTo(-16, -32 + b);
-    ctx.bezierCurveTo(-10, -44 + b, 10, -44 + b, 16, -32 + b);
-    ctx.bezierCurveTo(12, -38 + b, -12, -38 + b, -16, -32 + b);
+    ctx.moveTo(-14, -32 + b);
+    ctx.bezierCurveTo(-8, -42 + b, 8, -42 + b, 14, -32 + b);
+    ctx.bezierCurveTo(10, -36 + b, -10, -36 + b, -14, -32 + b);
     ctx.fill();
-    // Hair sides (comes down past ears, natural)
-    ctx.fillRect(-R - 1, -32 + b, 7, 16);
-    ctx.fillRect(R - 6, -32 + b, 7, 16);
-    // Subtle hair texture lines
-    ctx.strokeStyle = 'rgba(50,50,50,0.3)';
-    ctx.lineWidth = 0.6;
-    for (let i = -6; i <= 6; i += 4) {
-        ctx.beginPath();
-        ctx.moveTo(i, -42 + b);
-        ctx.bezierCurveTo(i + 1, -38 + b, i + 2, -34 + b, i + 3, -30 + b);
-        ctx.stroke();
-    }
+    // Short sideburns (stop above ear level, don't cover cheeks)
+    ctx.fillRect(-R, -32 + b, 6, 8);
+    ctx.fillRect(R - 6, -32 + b, 6, 8);
 
     // ── FOREHEAD (subtle lines) ──
     ctx.strokeStyle = 'rgba(0,0,0,0.07)';
@@ -1312,30 +1302,11 @@ function renderFrancisco() {
     ctx.beginPath(); ctx.ellipse(-2.5, -16 + b, 1.5, 1, 0, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(2.5, -16 + b, 1.5, 1, 0, 0, Math.PI * 2); ctx.fill();
 
-    // ── MUSTACHE (neat, thick, trimmed - like the reference photo) ──
-    ctx.fillStyle = '#080808';
-    // Main shape: sits right under nose, full but trimmed
-    ctx.beginPath();
-    ctx.moveTo(-12, -15 + b);
-    ctx.quadraticCurveTo(-7, -11 + b, 0, -13.5 + b);
-    ctx.quadraticCurveTo(7, -11 + b, 12, -15 + b);
-    ctx.quadraticCurveTo(7, -10 + b, 0, -11.5 + b);
-    ctx.quadraticCurveTo(-7, -10 + b, -12, -15 + b);
-    ctx.fill();
-    // Thicker ends that droop slightly
-    ctx.beginPath(); ctx.ellipse(-12, -13 + b, 2.5, 1.8, -0.3, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(12, -13 + b, 2.5, 1.8, 0.3, 0, Math.PI * 2); ctx.fill();
-
-    // ── MOUTH (warm smirk - slight smile) ──
+    // ── MOUTH (warm smirk - drawn BEFORE mustache so mustache is on top) ──
     ctx.strokeStyle = '#5A3525';
-    ctx.lineWidth = 1.3;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.arc(0, -10 + b, 4.5, 0.2, Math.PI - 0.2);
-    ctx.stroke();
-    // One-sided smirk upturn
-    ctx.beginPath();
-    ctx.moveTo(4.3, -10 + b);
-    ctx.quadraticCurveTo(5.5, -11.5 + b, 6, -12 + b);
+    ctx.arc(0, -10 + b, 5, 0.2, Math.PI - 0.2);
     ctx.stroke();
 
     // Nasolabial folds (laugh lines)
@@ -1343,6 +1314,28 @@ function renderFrancisco() {
     ctx.lineWidth = 0.6;
     ctx.beginPath(); ctx.moveTo(-8, -19 + b); ctx.quadraticCurveTo(-10, -14 + b, -7, -9 + b); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(8, -19 + b); ctx.quadraticCurveTo(10, -14 + b, 7, -9 + b); ctx.stroke();
+
+    // ── BIG BLACK MUSTACHE (drawn LAST on the face so it's always visible) ──
+    ctx.fillStyle = '#050505';
+    // Main thick body - wide, full, prominent
+    ctx.beginPath();
+    ctx.moveTo(-14, -15.5 + b);
+    ctx.quadraticCurveTo(-8, -10 + b, 0, -13 + b);
+    ctx.quadraticCurveTo(8, -10 + b, 14, -15.5 + b);
+    ctx.quadraticCurveTo(8, -8.5 + b, 0, -11 + b);
+    ctx.quadraticCurveTo(-8, -8.5 + b, -14, -15.5 + b);
+    ctx.fill();
+    // Thick rounded ends
+    ctx.beginPath(); ctx.ellipse(-14, -12.5 + b, 3, 2.2, -0.3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(14, -12.5 + b, 3, 2.2, 0.3, 0, Math.PI * 2); ctx.fill();
+    // Mustache outline for contrast
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(-14, -15.5 + b);
+    ctx.quadraticCurveTo(-8, -10 + b, 0, -13 + b);
+    ctx.quadraticCurveTo(8, -10 + b, 14, -15.5 + b);
+    ctx.stroke();
 
     // ── ANGER AURA (at higher difficulty) ──
     if (GAME.difficulty >= 2) {
