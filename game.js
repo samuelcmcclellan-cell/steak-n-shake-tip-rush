@@ -710,7 +710,7 @@ function render() {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         if (isFrisco) {
-            ctx.font = 'bold 13px Bungee, Arial';
+            ctx.font = 'bold 16px Bungee, Arial';
             ctx.fillText('FRISCO', cx, cy - 4);
             ctx.font = 'bold 12px Bungee, Arial';
             ctx.fillText('MELT', cx, cy + 6);
@@ -718,7 +718,7 @@ function render() {
             ctx.font = 'bold 16px Bungee, Arial';
             ctx.fillText('🍔', cx, cy);
         } else {
-            ctx.font = 'bold 15px Bungee, Arial';
+            ctx.font = 'bold 18px Bungee, Arial';
             ctx.fillText('🍔', cx, cy);
         }
 
@@ -731,7 +731,7 @@ function render() {
 
         // Tip value label
         ctx.fillStyle = '#FFD700';
-        ctx.font = isFrisco ? 'bold 16px Bungee, Arial' : 'bold 14px Bungee, Arial';
+        ctx.font = isFrisco ? 'bold 16px Bungee, Arial' : 'bold 16px Bungee, Arial';
         ctx.shadowColor = 'rgba(0,0,0,0.5)';
         ctx.shadowBlur = 3;
         ctx.fillText('$' + order.tipValue, cx, cy + bubbleR + 17);
@@ -769,7 +769,7 @@ function render() {
         ctx.fillRect(-tw/2 + 2, -th/2 + 2, tw - 4, th - 4);
         // Dollar amount
         ctx.fillStyle = '#1B5E20';
-        ctx.font = isBig ? 'bold 16px Bungee, Arial' : 'bold 14px Bungee, Arial';
+        ctx.font = isBig ? 'bold 16px Bungee, Arial' : 'bold 16px Bungee, Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.shadowColor = 'rgba(0,0,0,0.3)';
@@ -829,7 +829,7 @@ function render() {
         ctx.fillStyle = `rgba(76, 175, 80, ${flash})`;
         ctx.fillRect(FOOD_PICKUP.x, FOOD_PICKUP.y, FOOD_PICKUP.w, FOOD_PICKUP.h);
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 15px Bungee, Arial';
+        ctx.font = 'bold 18px Bungee, Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.shadowColor = 'rgba(0,0,0,0.6)';
@@ -874,7 +874,7 @@ function render() {
         ctx.fill();
         // Text
         ctx.fillStyle = '#222';
-        ctx.font = 'bold 13px Bungee, Arial';
+        ctx.font = 'bold 16px Bungee, Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         lines.forEach((line, i) => {
@@ -943,7 +943,7 @@ function renderRestaurant() {
     ctx.fillStyle = '#888';
     ctx.fillRect(GAME_W / 2 - 25, 2, 50, 8);
     ctx.fillStyle = '#eee';
-    ctx.font = 'bold 9px Bungee, Arial';
+    ctx.font = 'bold 12px Bungee, Arial';
     ctx.textAlign = 'center';
     ctx.shadowColor = 'rgba(0,0,0,0.6)';
     ctx.shadowBlur = 4;
@@ -1304,71 +1304,71 @@ function renderFrancisco() {
     ctx.fillStyle = '#fff';
     ctx.fillRect(-16, 2 + b, 32, 10);
     ctx.fillStyle = '#000';
-    ctx.font = 'bold 8px Bungee, Arial';
+    ctx.font = 'bold 10px Bungee, Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('FRANCISCO', 0, 7 + b);
 
-    // ===== HEAD =====
-    const R = 18; // head radius - bigger for more face room
-    const blink = Math.sin(GAME.elapsed * 3) > 0.97; // occasional blink
-    const headBob = Math.sin(GAME.elapsed * 2.5) * 0.8; // slight head bob animation
+    // ===== CARTOONISH HEAD =====
+    // Layout (top to bottom, y relative to head center at -28):
+    //   -48 to -38: hair
+    //   -38: eyebrows
+    //   -34: eyes
+    //   -28: nose
+    //   -24: MUSTACHE
+    //   -18: mouth/grin
+    const H = -28; // head center Y
+    const R = 20;  // big cartoon head
+    const hb = Math.sin(GAME.elapsed * 2.5) * 1; // head bob
+    const blink = Math.sin(GAME.elapsed * 3) > 0.97;
+    const fDist = GAME.player ? Math.sqrt(Math.pow(GAME.player.x - f.x, 2) + Math.pow(GAME.player.y - f.y, 2)) : 999;
 
     // Neck
     ctx.fillStyle = S;
-    ctx.fillRect(-9, -12 + b, 18, 8);
+    ctx.fillRect(-10, -12 + b, 20, 8);
 
-    // Head (big round)
+    // BIG ROUND HEAD
     ctx.fillStyle = S;
-    ctx.beginPath(); ctx.arc(0, -24 + b + headBob, R, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, H + b + hb, R, 0, Math.PI * 2); ctx.fill();
 
-    // Cheeks (slightly puffed from grinning)
-    ctx.beginPath(); ctx.ellipse(-12, -20 + b + headBob, 8, 6, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(12, -20 + b + headBob, 8, 6, 0, 0, Math.PI * 2); ctx.fill();
+    // Ears
+    ctx.beginPath(); ctx.arc(-R + 2, H + b + hb, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(R - 2, H + b + hb, 4, 0, Math.PI * 2); ctx.fill();
 
-    // Ears (small circles, skin-colored)
-    ctx.beginPath(); ctx.arc(-R + 1, -24 + b + headBob, 4, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(R - 1, -24 + b + headBob, 4, 0, Math.PI * 2); ctx.fill();
-
-    // SHORT BLACK HAIR on top only
+    // SHORT BLACK HAIR (top of head only)
     ctx.fillStyle = '#0a0a0a';
     ctx.beginPath();
-    ctx.arc(0, -28 + b + headBob, R - 2, Math.PI * 1.05, Math.PI * 1.95);
+    ctx.arc(0, H - 4 + b + hb, R - 2, Math.PI * 1.05, Math.PI * 1.95);
     ctx.fill();
 
-    // Forehead wrinkles (subtle, animated - scrunch when close to player)
-    const fDist = GAME.player ? Math.sqrt(Math.pow(GAME.player.x - f.x, 2) + Math.pow(GAME.player.y - f.y, 2)) : 999;
-    const wrinkleAlpha = fDist < 150 ? 0.15 : 0.07;
-    ctx.strokeStyle = `rgba(0,0,0,${wrinkleAlpha})`;
-    ctx.lineWidth = 0.5;
-    ctx.beginPath(); ctx.moveTo(-7, -33 + b + headBob); ctx.lineTo(7, -33 + b + headBob); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-6, -31 + b + headBob); ctx.lineTo(6, -31 + b + headBob); ctx.stroke();
+    // THICK EYEBROWS (cartoonish, animated)
+    const browY = H - 10 + b + hb + (fDist < 150 ? -2 : 0);
+    ctx.fillStyle = '#0a0a0a';
+    ctx.beginPath();
+    ctx.ellipse(-7, browY, 6, 2.5, -0.15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(7, browY, 6, 2.5, 0.15, 0, Math.PI * 2);
+    ctx.fill();
 
-    // EYEBROWS (animated - raise when close to player)
-    const browRaise = fDist < 150 ? -2 : 0;
-    ctx.strokeStyle = '#0a0a0a';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.moveTo(-12, -31 + b + headBob + browRaise); ctx.quadraticCurveTo(-6, -34 + b + headBob + browRaise, -1, -31 + b + headBob + browRaise); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(12, -31 + b + headBob + browRaise); ctx.quadraticCurveTo(6, -34 + b + headBob + browRaise, 1, -31 + b + headBob + browRaise); ctx.stroke();
-
-    // EYES (creepy wide open, or blinking)
+    // BIG CARTOON EYES
+    const eyeY = H - 5 + b + hb;
     if (blink) {
-        // Blink - just lines
         ctx.strokeStyle = '#0a0a0a';
-        ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(-9, -26 + b + headBob); ctx.lineTo(-3, -26 + b + headBob); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(3, -26 + b + headBob); ctx.lineTo(9, -26 + b + headBob); ctx.stroke();
+        ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(-10, eyeY); ctx.lineTo(-3, eyeY); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(3, eyeY); ctx.lineTo(10, eyeY); ctx.stroke();
     } else {
-        // Eye whites (big, creepy)
+        // Big white eyes
         ctx.fillStyle = '#fff';
-        ctx.beginPath(); ctx.ellipse(-6, -26 + b + headBob, 5, 3.5, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(6, -26 + b + headBob, 5, 3.5, 0, 0, Math.PI * 2); ctx.fill();
-        // Eye outlines
-        ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-        ctx.lineWidth = 0.5;
-        ctx.beginPath(); ctx.ellipse(-6, -26 + b + headBob, 5, 3.5, 0, 0, Math.PI * 2); ctx.stroke();
-        ctx.beginPath(); ctx.ellipse(6, -26 + b + headBob, 5, 3.5, 0, 0, Math.PI * 2); ctx.stroke();
-        // Pupils (track player, get bigger when close)
+        ctx.beginPath(); ctx.ellipse(-7, eyeY, 5.5, 4.5, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(7, eyeY, 5.5, 4.5, 0, 0, Math.PI * 2); ctx.fill();
+        // Bold outlines
+        ctx.strokeStyle = '#111';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.ellipse(-7, eyeY, 5.5, 4.5, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(7, eyeY, 5.5, 4.5, 0, 0, Math.PI * 2); ctx.stroke();
+        // Big pupils (track player)
         const dp = GAME.player ? {
             x: GAME.player.x + GAME.player.w / 2 - (f.x + f.w / 2),
             y: GAME.player.y + GAME.player.h / 2 - (f.y + f.h / 2)
@@ -1376,64 +1376,52 @@ function renderFrancisco() {
         const dm = Math.sqrt(dp.x * dp.x + dp.y * dp.y) || 1;
         const ex = (dp.x / dm) * 2.5;
         const ey = (dp.y / dm) * 1.5;
-        const pupilR = fDist < 120 ? 2.8 : 2.2; // dilate when close
         ctx.fillStyle = '#0a0000';
-        ctx.beginPath(); ctx.arc(-6 + ex, -26 + b + headBob + ey, pupilR, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(6 + ex, -26 + b + headBob + ey, pupilR, 0, Math.PI * 2); ctx.fill();
-        // Eye glint
-        ctx.fillStyle = 'rgba(255,255,255,0.4)';
-        ctx.beginPath(); ctx.arc(-5 + ex * 0.5, -27 + b + headBob, 1, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(7 + ex * 0.5, -27 + b + headBob, 1, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(-7 + ex, eyeY + ey, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(7 + ex, eyeY + ey, 2.5, 0, Math.PI * 2); ctx.fill();
+        // Glint
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(-6, eyeY - 1.5, 1, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(8, eyeY - 1.5, 1, 0, Math.PI * 2); ctx.fill();
     }
 
-    // NOSE (on the face, proportional)
+    // ROUND NOSE
+    const noseY = H + 2 + b + hb;
     ctx.fillStyle = S;
-    ctx.beginPath(); ctx.ellipse(0, -20 + b + headBob, 3.5, 3, 0, 0, Math.PI * 2); ctx.fill();
-    // Nostrils
-    ctx.fillStyle = 'rgba(0,0,0,0.1)';
-    ctx.beginPath(); ctx.arc(-1.5, -19 + b + headBob, 1, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(1.5, -19 + b + headBob, 1, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, noseY, 4, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.ellipse(0, noseY, 4, 3.5, 0, 0, Math.PI * 2); ctx.stroke();
 
-    // CREEPY WIDE GRIN (within the face bounds)
-    const grinWobble = Math.sin(GAME.elapsed * 4) * 0.5; // slight animated wobble
-    ctx.fillStyle = '#2a0800';
-    ctx.beginPath(); ctx.arc(0, -13 + b + headBob, 8, 0.05 + grinWobble * 0.02, Math.PI - 0.05 + grinWobble * 0.02); ctx.fill();
-    // Teeth (top row)
-    ctx.fillStyle = '#FFFFEE';
-    ctx.fillRect(-7, -13 + b + headBob, 14, 4);
-    ctx.strokeStyle = '#ddd';
-    ctx.lineWidth = 0.4;
-    for (let tx = -6; tx <= 6; tx += 2) {
-        ctx.beginPath(); ctx.moveTo(tx, -13 + b + headBob); ctx.lineTo(tx, -9 + b + headBob); ctx.stroke();
-    }
-    // Bottom lip
-    ctx.fillStyle = '#9B6040';
-    ctx.beginPath(); ctx.ellipse(0, -6 + b + headBob, 6, 2, 0, 0, Math.PI); ctx.fill();
-
-    // Laugh lines (subtle, within face)
-    ctx.strokeStyle = 'rgba(0,0,0,0.08)';
-    ctx.lineWidth = 0.6;
-    ctx.beginPath(); ctx.moveTo(-8, -22 + b + headBob); ctx.quadraticCurveTo(-10, -17 + b + headBob, -8, -10 + b + headBob); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(8, -22 + b + headBob); ctx.quadraticCurveTo(10, -17 + b + headBob, 8, -10 + b + headBob); ctx.stroke();
-
-    // BIG HANDLEBAR MUSTACHE (on the face, between nose and mouth, stays within face width)
+    // ====== BIG BLACK MUSTACHE (BETWEEN nose and mouth) ======
+    const mustY = H + 6 + b + hb; // clearly below nose, above mouth
     ctx.fillStyle = '#050505';
-    // Main body - fits within face (max x = +-14)
+    // Thick curved handlebar shape
     ctx.beginPath();
-    ctx.moveTo(-14, -18 + b + headBob);
-    ctx.quadraticCurveTo(-8, -12 + b + headBob, 0, -16 + b + headBob);
-    ctx.quadraticCurveTo(8, -12 + b + headBob, 14, -18 + b + headBob);
-    ctx.quadraticCurveTo(8, -10 + b + headBob, 0, -13 + b + headBob);
-    ctx.quadraticCurveTo(-8, -10 + b + headBob, -14, -18 + b + headBob);
+    ctx.moveTo(-13, mustY - 2);
+    ctx.quadraticCurveTo(-7, mustY + 5, 0, mustY);
+    ctx.quadraticCurveTo(7, mustY + 5, 13, mustY - 2);
+    ctx.quadraticCurveTo(7, mustY + 7, 0, mustY + 3);
+    ctx.quadraticCurveTo(-7, mustY + 7, -13, mustY - 2);
     ctx.fill();
-    // Curled ends (within face boundary)
-    ctx.beginPath(); ctx.arc(-13, -15 + b + headBob, 3, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(13, -15 + b + headBob, 3, 0, Math.PI * 2); ctx.fill();
-    // Curl tips
-    ctx.beginPath(); ctx.arc(-14, -17 + b + headBob, 2, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(14, -17 + b + headBob, 2, 0, Math.PI * 2); ctx.fill();
-    // Thick center under nose
-    ctx.beginPath(); ctx.ellipse(0, -17 + b + headBob, 5, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+    // Curled ends
+    ctx.beginPath(); ctx.arc(-13, mustY + 1, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(13, mustY + 1, 3, 0, Math.PI * 2); ctx.fill();
+    // Center thickness right under nose
+    ctx.beginPath(); ctx.ellipse(0, mustY, 5, 3, 0, 0, Math.PI * 2); ctx.fill();
+
+    // CREEPY WIDE GRIN (below mustache)
+    const mouthY = H + 12 + b + hb;
+    ctx.fillStyle = '#2a0800';
+    ctx.beginPath(); ctx.arc(0, mouthY, 7, 0.1, Math.PI - 0.1); ctx.fill();
+    // Teeth
+    ctx.fillStyle = '#FFFFEE';
+    ctx.fillRect(-6, mouthY, 12, 3.5);
+    ctx.strokeStyle = '#ddd';
+    ctx.lineWidth = 0.5;
+    for (let tx = -5; tx <= 5; tx += 2.5) {
+        ctx.beginPath(); ctx.moveTo(tx, mouthY); ctx.lineTo(tx, mouthY + 3); ctx.stroke();
+    }
 
     // ANGER AURA at high difficulty
     if (GAME.difficulty >= 2) {
@@ -1581,7 +1569,7 @@ function renderHUD() {
 
     // Score - HUGE
     ctx.fillStyle = '#4CAF50';
-    ctx.font = 'bold 32px Bungee, Arial';
+    ctx.font = 'bold 36px Bungee, Arial';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.shadowColor = 'rgba(76, 175, 80, 0.4)';
@@ -1597,7 +1585,7 @@ function renderHUD() {
         ctx.fillText('🍔 DELIVERING...', 15, 38);
     } else if (GAME.player) {
         ctx.fillStyle = '#999';
-        ctx.font = 'bold 14px Bungee, Arial';
+        ctx.font = 'bold 16px Bungee, Arial';
         ctx.textAlign = 'left';
         ctx.fillText('GO TO COUNTER', 15, 38);
     }
@@ -1606,7 +1594,7 @@ function renderHUD() {
     const mins = Math.floor(GAME.elapsed / 60);
     const secs = Math.floor(GAME.elapsed % 60);
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 22px Bungee, Arial';
+    ctx.font = 'bold 26px Bungee, Arial';
     ctx.textAlign = 'center';
     ctx.fillText(mins + ':' + secs.toString().padStart(2, '0'), GAME_W / 2, 17);
 
@@ -1628,7 +1616,7 @@ function renderHUD() {
     const friscoOrders = GAME.orders.filter(o => o.orderType === 'frisco').length;
     if (friscoOrders > 0) {
         ctx.fillStyle = '#FFD700';
-        ctx.font = 'bold 15px Bungee, Arial';
+        ctx.font = 'bold 18px Bungee, Arial';
         ctx.textAlign = 'right';
         ctx.fillText('⭐ ' + friscoOrders + ' FRISCO MELT!', GAME_W - 12, 38);
     }
@@ -1649,7 +1637,7 @@ function renderHUD() {
         ctx.lineWidth = 1;
         ctx.strokeRect(barX - 1, barY - 1, barW + 2, barH + 2);
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 15px Bungee, Arial';
+        ctx.font = 'bold 18px Bungee, Arial';
         ctx.textAlign = 'center';
         ctx.fillText('🥤 MILKSHAKE SPEED!', GAME_W / 2, barY + barH + 16);
     }
