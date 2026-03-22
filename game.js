@@ -580,14 +580,15 @@ function render() {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         if (isFrisco) {
-            ctx.font = 'bold 9px Arial';
-            ctx.fillText('FRISCO', cx, cy - 3);
-            ctx.fillText('MELT', cx, cy + 6);
+            ctx.font = 'bold 11px Arial';
+            ctx.fillText('FRISCO', cx, cy - 4);
+            ctx.font = 'bold 10px Arial';
+            ctx.fillText('MELT', cx, cy + 5);
         } else if (order.orderType === 'combo') {
-            ctx.font = 'bold 12px Arial';
+            ctx.font = 'bold 14px Arial';
             ctx.fillText('🍔', cx, cy);
         } else {
-            ctx.font = 'bold 11px Arial';
+            ctx.font = 'bold 13px Arial';
             ctx.fillText('🍔', cx, cy);
         }
 
@@ -599,9 +600,12 @@ function render() {
         ctx.fillRect(cx - barW / 2, cy + bubbleR + 3, barW * pct, 5);
 
         // Tip value label
-        ctx.fillStyle = isFrisco ? '#FFD700' : '#FFD700';
-        ctx.font = isFrisco ? 'bold 11px Arial' : 'bold 9px Arial';
-        ctx.fillText('$' + order.tipValue, cx, cy + bubbleR + 16);
+        ctx.fillStyle = '#FFD700';
+        ctx.font = isFrisco ? 'bold 14px Arial' : 'bold 12px Arial';
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 3;
+        ctx.fillText('$' + order.tipValue, cx, cy + bubbleR + 17);
+        ctx.shadowBlur = 0;
     });
 
     // Floor glow under tips
@@ -635,11 +639,11 @@ function render() {
         ctx.fillRect(-tw/2 + 2, -th/2 + 2, tw - 4, th - 4);
         // Dollar amount
         ctx.fillStyle = '#1B5E20';
-        ctx.font = isBig ? 'bold 11px Arial' : 'bold 10px Arial';
+        ctx.font = isBig ? 'bold 14px Arial' : 'bold 12px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.shadowColor = 'rgba(0,0,0,0.2)';
-        ctx.shadowBlur = 2;
+        ctx.shadowColor = 'rgba(0,0,0,0.3)';
+        ctx.shadowBlur = 3;
         ctx.fillText('$' + tip.value, 0, 1);
         ctx.shadowBlur = 0;
         ctx.restore();
@@ -695,11 +699,11 @@ function render() {
         ctx.fillStyle = `rgba(76, 175, 80, ${flash})`;
         ctx.fillRect(FOOD_PICKUP.x, FOOD_PICKUP.y, FOOD_PICKUP.w, FOOD_PICKUP.h);
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 10px Arial';
+        ctx.font = 'bold 13px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.shadowColor = 'rgba(0,0,0,0.5)';
-        ctx.shadowBlur = 4;
+        ctx.shadowColor = 'rgba(0,0,0,0.6)';
+        ctx.shadowBlur = 5;
         ctx.fillText('⬆ GRAB FOOD ⬆', FOOD_PICKUP.x + FOOD_PICKUP.w / 2, FOOD_PICKUP.y + FOOD_PICKUP.h / 2);
         ctx.shadowBlur = 0;
     }
@@ -762,10 +766,10 @@ function renderRestaurant() {
     ctx.fillStyle = '#888';
     ctx.fillRect(GAME_W / 2 - 25, 2, 50, 8);
     ctx.fillStyle = '#eee';
-    ctx.font = 'bold 8px Arial';
+    ctx.font = 'bold 9px Arial';
     ctx.textAlign = 'center';
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
-    ctx.shadowBlur = 3;
+    ctx.shadowColor = 'rgba(0,0,0,0.6)';
+    ctx.shadowBlur = 4;
     ctx.fillText('KITCHEN', GAME_W / 2, 9);
     ctx.shadowBlur = 0;
 
@@ -1061,17 +1065,17 @@ function renderPlayer() {
     // RED BOWTIE
     drawBowtie(ctx, bob, -5);
 
-    // NAME TAG on apron
+    // NAME TAG on apron - BIGGER
     ctx.fillStyle = '#fff';
-    ctx.fillRect(-12, 1 + bob, 24, 7);
-    ctx.strokeStyle = '#ccc';
-    ctx.lineWidth = 0.5;
-    ctx.strokeRect(-12, 1 + bob, 24, 7);
+    ctx.fillRect(-14, 0 + bob, 28, 10);
+    ctx.strokeStyle = '#bbb';
+    ctx.lineWidth = 0.8;
+    ctx.strokeRect(-14, 0 + bob, 28, 10);
     ctx.fillStyle = '#000';
-    ctx.font = 'bold 6px Arial';
+    ctx.font = 'bold 8px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(p.name.toUpperCase(), 0, 4.5 + bob);
+    ctx.fillText(p.name.toUpperCase(), 0, 5 + bob);
 
     ctx.restore();
 }
@@ -1081,227 +1085,274 @@ function renderFrancisco() {
     const f = GAME.francisco;
     const cx = f.x + f.w / 2;
     const cy = f.y + f.h / 2;
-    const breathe = Math.sin(GAME.elapsed * 1.5) * 1.5;
-    const skin = '#9B6B4A'; // darker warm brown skin
+    const b = Math.sin(GAME.elapsed * 1.5) * 1.5; // breathe
+    const skin = '#8B5E3C'; // dark warm brown
 
     ctx.save();
     ctx.translate(cx, cy);
 
-    // === LEGS (black pants, wide) ===
-    ctx.fillStyle = '#1a1a1a';
-    ctx.fillRect(-12, 10 + breathe, 11, 14);
-    ctx.fillRect(1, 10 + breathe, 11, 14);
-    ctx.fillStyle = '#111';
-    ctx.fillRect(-13, 22 + breathe, 12, 5);
-    ctx.fillRect(1, 22 + breathe, 12, 5);
+    // ── WIDE BLACK PANTS ──
+    ctx.fillStyle = '#151515';
+    ctx.fillRect(-14, 12 + b, 13, 14);
+    ctx.fillRect(1, 12 + b, 13, 14);
+    // Black shoes
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(-15, 24 + b, 14, 5);
+    ctx.fillRect(1, 24 + b, 14, 5);
 
-    // === TORSO (white shirt - big round belly) ===
-    ctx.fillStyle = '#F0F0F0';
+    // ── BIG WHITE SHIRT (round belly) ──
+    ctx.fillStyle = '#F2F2F2';
+    // Belly shape
     ctx.beginPath();
-    ctx.ellipse(0, 0 + breathe, 20, 14, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 2 + b, 22, 16, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = '#ddd';
     ctx.lineWidth = 0.5;
     ctx.stroke();
-    ctx.fillRect(-18, -8 + breathe, 36, 8);
-    ctx.fillRect(-22, -6 + breathe, 6, 10);
-    ctx.fillRect(16, -6 + breathe, 6, 10);
-    ctx.fillStyle = '#ccc';
-    for (let by = -4; by <= 6; by += 4) {
-        ctx.beginPath(); ctx.arc(0, by + breathe, 1.2, 0, Math.PI * 2); ctx.fill();
-    }
-
-    // === BLACK APRON ===
-    ctx.fillStyle = '#1a1a1a';
+    // Upper shirt / shoulders
+    ctx.fillStyle = '#F2F2F2';
+    ctx.fillRect(-20, -10 + b, 40, 14);
+    // Broad shoulders
+    ctx.fillRect(-24, -8 + b, 6, 12);
+    ctx.fillRect(18, -8 + b, 6, 12);
+    // Collar
+    ctx.fillStyle = '#E8E8E8';
     ctx.beginPath();
-    ctx.moveTo(-16, -2 + breathe);
-    ctx.quadraticCurveTo(-18, 8 + breathe, -14, 12 + breathe);
-    ctx.lineTo(14, 12 + breathe);
-    ctx.quadraticCurveTo(18, 8 + breathe, 16, -2 + breathe);
+    ctx.moveTo(-8, -10 + b);
+    ctx.lineTo(0, -7 + b);
+    ctx.lineTo(8, -10 + b);
+    ctx.lineTo(8, -8 + b);
+    ctx.lineTo(0, -5 + b);
+    ctx.lineTo(-8, -8 + b);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = '#1a1a1a';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(-16, 0 + breathe); ctx.lineTo(-22, -2 + breathe); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(16, 0 + breathe); ctx.lineTo(22, -2 + breathe); ctx.stroke();
-
-    // === THICK ARMS ===
-    ctx.fillStyle = skin;
-    ctx.fillRect(-24, -4 + breathe, 8, 16);
-    ctx.fillRect(16, -4 + breathe, 8, 16);
-    ctx.beginPath(); ctx.arc(-20, 14 + breathe, 5, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(20, 14 + breathe, 5, 0, Math.PI * 2); ctx.fill();
-
-    // === RED BOWTIE ===
-    drawBowtie(ctx, breathe, -8);
-
-    // === HEAD - round, full, chubby face ===
-    const headR = 16;
-    ctx.fillStyle = skin;
-    ctx.beginPath();
-    ctx.arc(0, -20 + breathe, headR, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Double chin
-    ctx.beginPath();
-    ctx.ellipse(0, -7 + breathe, 13, 7, 0, 0, Math.PI);
-    ctx.fill();
-
-    // Full round cheeks
-    ctx.beginPath();
-    ctx.ellipse(-11, -17 + breathe, 7, 6, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(11, -17 + breathe, 7, 6, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Ears
-    ctx.beginPath(); ctx.arc(-headR, -20 + breathe, 5, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(headR, -20 + breathe, 5, 0, Math.PI * 2); ctx.fill();
-
-    ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.arc(0, -20 + breathe, headR, 0, Math.PI * 2); ctx.stroke();
-
-    // === BLACK HAIR - natural, thick, slightly wavy (not slicked) ===
-    ctx.fillStyle = '#0a0a0a';
-    // Full thick top
-    ctx.beginPath();
-    ctx.arc(0, -24 + breathe, headR + 2, Math.PI * 0.75, Math.PI * 2.25);
-    ctx.fill();
-    // Natural volume on top (wavy, not flat)
-    ctx.beginPath();
-    ctx.moveTo(-14, -30 + breathe);
-    ctx.quadraticCurveTo(-8, -40 + breathe, 0, -38 + breathe);
-    ctx.quadraticCurveTo(8, -40 + breathe, 14, -30 + breathe);
-    ctx.quadraticCurveTo(10, -34 + breathe, 0, -36 + breathe);
-    ctx.quadraticCurveTo(-10, -34 + breathe, -14, -30 + breathe);
-    ctx.fill();
-    // Side hair coming down past ears
-    ctx.fillRect(-headR, -28 + breathe, 6, 14);
-    ctx.fillRect(headR - 6, -28 + breathe, 6, 14);
-    // Slight wave texture
-    ctx.strokeStyle = 'rgba(30,30,30,0.4)';
-    ctx.lineWidth = 0.7;
-    ctx.beginPath();
-    ctx.moveTo(-8, -36 + breathe);
-    ctx.quadraticCurveTo(-4, -38 + breathe, 0, -36 + breathe);
-    ctx.quadraticCurveTo(4, -34 + breathe, 8, -36 + breathe);
-    ctx.stroke();
-
-    // Forehead lines (subtle, middle-aged)
-    ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-    ctx.lineWidth = 0.5;
-    ctx.beginPath(); ctx.moveTo(-7, -28 + breathe); ctx.lineTo(7, -28 + breathe); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-6, -26 + breathe); ctx.lineTo(6, -26 + breathe); ctx.stroke();
-
-    // === EYES - warm, slightly squinting/narrow ===
-    // Upper eyelids (squinting effect)
-    ctx.fillStyle = skin;
-
-    // Eye whites (narrower - squinting)
-    ctx.fillStyle = '#FFFFF0';
-    ctx.beginPath(); ctx.ellipse(-6, -21 + breathe, 4, 2.5, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(6, -21 + breathe, 4, 2.5, 0, 0, Math.PI * 2); ctx.fill();
-
-    // Heavy upper eyelids (gives that warm squinting look)
-    ctx.fillStyle = skin;
-    ctx.beginPath(); ctx.ellipse(-6, -22.5 + breathe, 5, 2, 0, 0, Math.PI); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(6, -22.5 + breathe, 5, 2, 0, 0, Math.PI); ctx.fill();
-
-    // Dark brown pupils (track player)
-    const dirToPlayer = GAME.player ? {
-        x: (GAME.player.x + GAME.player.w / 2 - (f.x + f.w / 2)),
-        y: (GAME.player.y + GAME.player.h / 2 - (f.y + f.h / 2))
-    } : { x: 0, y: 1 };
-    const dirMag = Math.sqrt(dirToPlayer.x * dirToPlayer.x + dirToPlayer.y * dirToPlayer.y) || 1;
-    const eX = (dirToPlayer.x / dirMag) * 2;
-    const eY = (dirToPlayer.y / dirMag) * 1;
-
-    ctx.fillStyle = '#1a0800';
-    ctx.beginPath(); ctx.arc(-6 + eX, -21 + breathe + eY, 2, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(6 + eX, -21 + breathe + eY, 2, 0, Math.PI * 2); ctx.fill();
-
-    // Red glint at high difficulty
-    const redI = Math.min(1, GAME.difficulty * 0.1);
-    if (redI > 0) {
-        ctx.fillStyle = `rgba(255, 0, 0, ${redI * 0.5})`;
-        ctx.beginPath(); ctx.arc(-6 + eX, -21 + breathe + eY, 0.8, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(6 + eX, -21 + breathe + eY, 0.8, 0, Math.PI * 2); ctx.fill();
+    // Buttons down center
+    ctx.fillStyle = '#ccc';
+    for (let by = -4; by <= 8; by += 5) {
+        ctx.beginPath(); ctx.arc(0, by + b, 1.3, 0, Math.PI * 2); ctx.fill();
     }
 
-    // === THICK BLACK EYEBROWS (bushy, natural) ===
-    ctx.fillStyle = '#0a0a0a';
-    // Left brow (thick, slightly arched)
+    // ── BLACK APRON (wraps around belly) ──
+    ctx.fillStyle = '#151515';
     ctx.beginPath();
-    ctx.moveTo(-10, -25 + breathe);
-    ctx.quadraticCurveTo(-6, -27 + breathe, -2, -25 + breathe);
-    ctx.quadraticCurveTo(-6, -24.5 + breathe, -10, -25 + breathe);
+    ctx.moveTo(-18, 0 + b);
+    ctx.quadraticCurveTo(-20, 10 + b, -16, 14 + b);
+    ctx.lineTo(16, 14 + b);
+    ctx.quadraticCurveTo(20, 10 + b, 18, 0 + b);
+    ctx.closePath();
     ctx.fill();
-    // Right brow
-    ctx.beginPath();
-    ctx.moveTo(10, -25 + breathe);
-    ctx.quadraticCurveTo(6, -27 + breathe, 2, -25 + breathe);
-    ctx.quadraticCurveTo(6, -24.5 + breathe, 10, -25 + breathe);
-    ctx.fill();
+    // Apron waist ties
+    ctx.strokeStyle = '#222';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-18, 2 + b); ctx.lineTo(-24, 0 + b); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(18, 2 + b); ctx.lineTo(24, 0 + b); ctx.stroke();
 
-    // === BROAD NOSE ===
+    // ── THICK BROWN ARMS ──
+    ctx.fillStyle = skin;
+    // Left arm
+    ctx.fillRect(-26, -4 + b, 9, 18);
+    // Right arm
+    ctx.fillRect(17, -4 + b, 9, 18);
+    // Round hands
+    ctx.beginPath(); ctx.arc(-22, 16 + b, 5.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(22, 16 + b, 5.5, 0, Math.PI * 2); ctx.fill();
+
+    // ── RED BOWTIE ──
+    drawBowtie(ctx, b, -9);
+
+    // ── NAME TAG on apron ──
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(-16, 2 + b, 32, 10);
+    ctx.strokeStyle = '#bbb';
+    ctx.lineWidth = 0.6;
+    ctx.strokeRect(-16, 2 + b, 32, 10);
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 8px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('FRANCISCO', 0, 7 + b);
+
+    // ── HEAD (big, round, chubby) ──
+    const R = 17;
     ctx.fillStyle = skin;
     ctx.beginPath();
-    ctx.ellipse(0, -16 + breathe, 4, 3, 0, 0, Math.PI * 2);
+    ctx.arc(0, -22 + b, R, 0, Math.PI * 2);
     ctx.fill();
+
+    // Fat neck / double chin
+    ctx.beginPath();
+    ctx.ellipse(0, -8 + b, 14, 8, 0, -0.3, Math.PI + 0.3);
+    ctx.fill();
+
+    // Puffy cheeks
+    const cheekShade = '#7D5233';
+    ctx.fillStyle = skin;
+    ctx.beginPath(); ctx.ellipse(-12, -18 + b, 8, 7, -0.1, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(12, -18 + b, 8, 7, 0.1, 0, Math.PI * 2); ctx.fill();
+    // Cheek warmth (slight reddish tint)
+    ctx.fillStyle = 'rgba(180, 80, 60, 0.08)';
+    ctx.beginPath(); ctx.ellipse(-10, -17 + b, 5, 4, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(10, -17 + b, 5, 4, 0, 0, Math.PI * 2); ctx.fill();
+
+    // Ears
+    ctx.fillStyle = skin;
+    ctx.beginPath(); ctx.ellipse(-R, -22 + b, 5, 6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(R, -22 + b, 5, 6, 0, 0, Math.PI * 2); ctx.fill();
+    // Ear inner
+    ctx.fillStyle = 'rgba(0,0,0,0.06)';
+    ctx.beginPath(); ctx.ellipse(-R, -22 + b, 3, 4, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(R, -22 + b, 3, 4, 0, 0, Math.PI * 2); ctx.fill();
+
+    // Head outline
+    ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(0, -22 + b, R, 0, Math.PI * 2); ctx.stroke();
+
+    // ── THICK BLACK HAIR (natural, full, wavy on top) ──
+    ctx.fillStyle = '#080808';
+    // Main hair mass covering top of head
+    ctx.beginPath();
+    ctx.arc(0, -26 + b, R + 2, Math.PI * 0.72, Math.PI * 2.28);
+    ctx.fill();
+    // Volume / wave on top
+    ctx.beginPath();
+    ctx.moveTo(-16, -32 + b);
+    ctx.bezierCurveTo(-10, -44 + b, 10, -44 + b, 16, -32 + b);
+    ctx.bezierCurveTo(12, -38 + b, -12, -38 + b, -16, -32 + b);
+    ctx.fill();
+    // Hair sides (comes down past ears, natural)
+    ctx.fillRect(-R - 1, -32 + b, 7, 16);
+    ctx.fillRect(R - 6, -32 + b, 7, 16);
+    // Subtle hair texture lines
+    ctx.strokeStyle = 'rgba(50,50,50,0.3)';
+    ctx.lineWidth = 0.6;
+    for (let i = -6; i <= 6; i += 4) {
+        ctx.beginPath();
+        ctx.moveTo(i, -42 + b);
+        ctx.bezierCurveTo(i + 1, -38 + b, i + 2, -34 + b, i + 3, -30 + b);
+        ctx.stroke();
+    }
+
+    // ── FOREHEAD (subtle lines) ──
+    ctx.strokeStyle = 'rgba(0,0,0,0.07)';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(-8, -30 + b); ctx.lineTo(8, -30 + b); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-7, -28 + b); ctx.lineTo(7, -28 + b); ctx.stroke();
+
+    // ── EYEBROWS (thick, dark, natural) ──
+    ctx.fillStyle = '#080808';
+    ctx.beginPath();
+    ctx.moveTo(-11, -27 + b);
+    ctx.quadraticCurveTo(-6, -29.5 + b, -1, -27 + b);
+    ctx.quadraticCurveTo(-6, -26 + b, -11, -27 + b);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(11, -27 + b);
+    ctx.quadraticCurveTo(6, -29.5 + b, 1, -27 + b);
+    ctx.quadraticCurveTo(6, -26 + b, 11, -27 + b);
+    ctx.fill();
+
+    // ── EYES (warm, slightly narrowed/squinting) ──
+    // White
+    ctx.fillStyle = '#FFFEF5';
+    ctx.beginPath(); ctx.ellipse(-6, -23 + b, 4.5, 2.8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(6, -23 + b, 4.5, 2.8, 0, 0, Math.PI * 2); ctx.fill();
+    // Heavy droopy upper lids (the squint)
+    ctx.fillStyle = skin;
+    ctx.beginPath(); ctx.ellipse(-6, -24.5 + b, 5.5, 2.5, 0, -0.1, Math.PI + 0.1); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(6, -24.5 + b, 5.5, 2.5, 0, -0.1, Math.PI + 0.1); ctx.fill();
+    // Lower lid line
+    ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+    ctx.lineWidth = 0.6;
+    ctx.beginPath(); ctx.arc(-6, -21 + b, 4, 0.2, Math.PI - 0.2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(6, -21 + b, 4, 0.2, Math.PI - 0.2); ctx.stroke();
+
+    // Pupils (track player)
+    const dp = GAME.player ? {
+        x: GAME.player.x + GAME.player.w / 2 - (f.x + f.w / 2),
+        y: GAME.player.y + GAME.player.h / 2 - (f.y + f.h / 2)
+    } : { x: 0, y: 1 };
+    const dm = Math.sqrt(dp.x * dp.x + dp.y * dp.y) || 1;
+    const ex = (dp.x / dm) * 2;
+    const ey = (dp.y / dm) * 1;
+    ctx.fillStyle = '#100600';
+    ctx.beginPath(); ctx.arc(-6 + ex, -23 + b + ey, 2.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(6 + ex, -23 + b + ey, 2.2, 0, Math.PI * 2); ctx.fill();
+    // Highlight dot
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.beginPath(); ctx.arc(-5 + ex, -24 + b + ey, 0.7, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(7 + ex, -24 + b + ey, 0.7, 0, Math.PI * 2); ctx.fill();
+
+    // Red glint at higher difficulty
+    const ri = Math.min(1, GAME.difficulty * 0.1);
+    if (ri > 0) {
+        ctx.fillStyle = `rgba(255,0,0,${ri * 0.4})`;
+        ctx.beginPath(); ctx.arc(-6 + ex, -23 + b + ey, 0.9, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(6 + ex, -23 + b + ey, 0.9, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // ── NOSE (broad, round, prominent) ──
+    ctx.fillStyle = skin;
+    ctx.beginPath();
+    ctx.ellipse(0, -17.5 + b, 4.5, 3.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Bridge shadow
+    ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(-1.5, -22 + b);
+    ctx.quadraticCurveTo(-2, -19 + b, -3, -16.5 + b);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(1.5, -22 + b);
+    ctx.quadraticCurveTo(2, -19 + b, 3, -16.5 + b);
+    ctx.stroke();
     // Nostrils
     ctx.fillStyle = 'rgba(0,0,0,0.12)';
-    ctx.beginPath(); ctx.arc(-2, -15 + breathe, 1.2, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(2, -15 + breathe, 1.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-2.5, -16 + b, 1.5, 1, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(2.5, -16 + b, 1.5, 1, 0, 0, Math.PI * 2); ctx.fill();
 
-    // === NEAT BLACK MUSTACHE (trimmed, not handlebar - sits under nose) ===
-    ctx.fillStyle = '#0a0a0a';
-    // Main mustache body - neat, wide but trimmed
+    // ── MUSTACHE (neat, thick, trimmed - like the reference photo) ──
+    ctx.fillStyle = '#080808';
+    // Main shape: sits right under nose, full but trimmed
     ctx.beginPath();
-    ctx.moveTo(-11, -14 + breathe);
-    ctx.quadraticCurveTo(-6, -10 + breathe, 0, -12.5 + breathe);
-    ctx.quadraticCurveTo(6, -10 + breathe, 11, -14 + breathe);
-    ctx.quadraticCurveTo(6, -9 + breathe, 0, -10.5 + breathe);
-    ctx.quadraticCurveTo(-6, -9 + breathe, -11, -14 + breathe);
+    ctx.moveTo(-12, -15 + b);
+    ctx.quadraticCurveTo(-7, -11 + b, 0, -13.5 + b);
+    ctx.quadraticCurveTo(7, -11 + b, 12, -15 + b);
+    ctx.quadraticCurveTo(7, -10 + b, 0, -11.5 + b);
+    ctx.quadraticCurveTo(-7, -10 + b, -12, -15 + b);
     ctx.fill();
-    // Slightly thicker at the ends (droops a tiny bit)
-    ctx.beginPath(); ctx.arc(-11, -12.5 + breathe, 2, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(11, -12.5 + breathe, 2, 0, Math.PI * 2); ctx.fill();
+    // Thicker ends that droop slightly
+    ctx.beginPath(); ctx.ellipse(-12, -13 + b, 2.5, 1.8, -0.3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(12, -13 + b, 2.5, 1.8, 0.3, 0, Math.PI * 2); ctx.fill();
 
-    // === MOUTH (slight warm smirk) ===
-    ctx.strokeStyle = '#6B4030';
-    ctx.lineWidth = 1.2;
+    // ── MOUTH (warm smirk - slight smile) ──
+    ctx.strokeStyle = '#5A3525';
+    ctx.lineWidth = 1.3;
     ctx.beginPath();
-    ctx.arc(0, -9 + breathe, 4, 0.3, Math.PI - 0.3);
+    ctx.arc(0, -10 + b, 4.5, 0.2, Math.PI - 0.2);
     ctx.stroke();
-    // Slight upturn on one side (smirk)
+    // One-sided smirk upturn
     ctx.beginPath();
-    ctx.moveTo(4, -9 + breathe);
-    ctx.quadraticCurveTo(5, -10 + breathe, 5.5, -10.5 + breathe);
-    ctx.stroke();
-
-    // Laugh lines / smile creases (nasolabial folds)
-    ctx.strokeStyle = 'rgba(0,0,0,0.08)';
-    ctx.lineWidth = 0.7;
-    ctx.beginPath();
-    ctx.moveTo(-8, -18 + breathe);
-    ctx.quadraticCurveTo(-9, -14 + breathe, -7, -9 + breathe);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(8, -18 + breathe);
-    ctx.quadraticCurveTo(9, -14 + breathe, 7, -9 + breathe);
+    ctx.moveTo(4.3, -10 + b);
+    ctx.quadraticCurveTo(5.5, -11.5 + b, 6, -12 + b);
     ctx.stroke();
 
-    // === ANGER AURA (increases with difficulty) ===
+    // Nasolabial folds (laugh lines)
+    ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+    ctx.lineWidth = 0.6;
+    ctx.beginPath(); ctx.moveTo(-8, -19 + b); ctx.quadraticCurveTo(-10, -14 + b, -7, -9 + b); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(8, -19 + b); ctx.quadraticCurveTo(10, -14 + b, 7, -9 + b); ctx.stroke();
+
+    // ── ANGER AURA (at higher difficulty) ──
     if (GAME.difficulty >= 2) {
-        ctx.strokeStyle = `rgba(255, 50, 0, ${Math.min(0.5, GAME.difficulty * 0.05)})`;
+        ctx.strokeStyle = `rgba(255, 40, 0, ${Math.min(0.5, GAME.difficulty * 0.05)})`;
         ctx.lineWidth = 2;
         for (let i = 0; i < Math.min(6, GAME.difficulty); i++) {
-            const angle = (i / 6) * Math.PI * 2 + GAME.elapsed * 1.5;
+            const a = (i / 6) * Math.PI * 2 + GAME.elapsed * 1.5;
             ctx.beginPath();
-            ctx.moveTo(Math.cos(angle) * 24, -20 + Math.sin(angle) * 24);
-            ctx.lineTo(Math.cos(angle) * 30, -20 + Math.sin(angle) * 30);
+            ctx.moveTo(Math.cos(a) * 26, -22 + Math.sin(a) * 26);
+            ctx.lineTo(Math.cos(a) * 32, -22 + Math.sin(a) * 32);
             ctx.stroke();
         }
     }
@@ -1322,9 +1373,9 @@ function renderHUD() {
     ctx.fillStyle = '#CC0000';
     ctx.fillRect(0, 43, GAME_W, 2);
 
-    // Score - BIG
+    // Score - HUGE
     ctx.fillStyle = '#4CAF50';
-    ctx.font = 'bold 24px Arial';
+    ctx.font = 'bold 28px Arial';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.shadowColor = 'rgba(76, 175, 80, 0.4)';
@@ -1335,32 +1386,32 @@ function renderHUD() {
     // Carrying food indicator
     if (GAME.player && GAME.player.carryingFood) {
         ctx.fillStyle = '#FF9800';
-        ctx.font = 'bold 12px Arial';
+        ctx.font = 'bold 14px Arial';
         ctx.textAlign = 'left';
-        ctx.fillText('🍔 DELIVERING...', 15, 35);
+        ctx.fillText('🍔 DELIVERING...', 15, 36);
     } else if (GAME.player) {
         ctx.fillStyle = '#999';
-        ctx.font = 'bold 10px Arial';
+        ctx.font = 'bold 12px Arial';
         ctx.textAlign = 'left';
-        ctx.fillText('GO TO COUNTER', 15, 35);
+        ctx.fillText('GO TO COUNTER', 15, 36);
     }
 
     // Time - bigger
     const mins = Math.floor(GAME.elapsed / 60);
     const secs = Math.floor(GAME.elapsed % 60);
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 16px Arial';
+    ctx.font = 'bold 20px Arial';
     ctx.textAlign = 'center';
     ctx.fillText(mins + ':' + secs.toString().padStart(2, '0'), GAME_W / 2, 16);
 
     // Orders waiting
     ctx.fillStyle = '#FF9800';
-    ctx.font = 'bold 12px Arial';
-    ctx.fillText(GAME.orders.length + ' ORDERS', GAME_W / 2, 35);
+    ctx.font = 'bold 14px Arial';
+    ctx.fillText(GAME.orders.length + ' ORDERS', GAME_W / 2, 36);
 
     // High score
     ctx.fillStyle = '#FFD700';
-    ctx.font = 'bold 14px Arial';
+    ctx.font = 'bold 16px Arial';
     ctx.textAlign = 'right';
     ctx.shadowColor = 'rgba(255, 215, 0, 0.3)';
     ctx.shadowBlur = 6;
@@ -1371,9 +1422,9 @@ function renderHUD() {
     const friscoOrders = GAME.orders.filter(o => o.orderType === 'frisco').length;
     if (friscoOrders > 0) {
         ctx.fillStyle = '#FFD700';
-        ctx.font = 'bold 11px Arial';
+        ctx.font = 'bold 13px Arial';
         ctx.textAlign = 'right';
-        ctx.fillText('⭐ ' + friscoOrders + ' FRISCO MELT!', GAME_W - 12, 35);
+        ctx.fillText('⭐ ' + friscoOrders + ' FRISCO MELT!', GAME_W - 12, 36);
     }
 
     // Milkshake timer bar
@@ -1392,19 +1443,19 @@ function renderHUD() {
         ctx.lineWidth = 1;
         ctx.strokeRect(barX - 1, barY - 1, barW + 2, barH + 2);
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 11px Arial';
+        ctx.font = 'bold 13px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('🥤 MILKSHAKE SPEED!', GAME_W / 2, barY + barH + 14);
+        ctx.fillText('🥤 MILKSHAKE SPEED!', GAME_W / 2, barY + barH + 15);
     }
 
     // Francisco speed warning - bigger, scarier
     if (GAME.difficulty >= 3) {
         ctx.fillStyle = `rgba(255, 0, 0, ${0.5 + Math.sin(GAME.elapsed * 4) * 0.3})`;
-        ctx.font = 'bold 14px Arial';
+        ctx.font = 'bold 16px Arial';
         ctx.textAlign = 'center';
-        ctx.shadowColor = 'rgba(255, 0, 0, 0.5)';
-        ctx.shadowBlur = 10;
-        ctx.fillText('⚠ FRANCISCO IS SPEEDING UP ⚠', GAME_W / 2, GAME_H - 22);
+        ctx.shadowColor = 'rgba(255, 0, 0, 0.6)';
+        ctx.shadowBlur = 12;
+        ctx.fillText('⚠ FRANCISCO IS SPEEDING UP ⚠', GAME_W / 2, GAME_H - 20);
         ctx.shadowBlur = 0;
     }
 }
