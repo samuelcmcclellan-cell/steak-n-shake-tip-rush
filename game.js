@@ -1382,8 +1382,8 @@ function renderFrancisco() {
     // ── BALDING HEAD - just wisps of black hair on sides ──
     ctx.fillStyle = '#0a0a0a';
     // Only thin strips on the sides - mostly bald on top
-    ctx.fillRect(-R, -28 + b, 5, 8);
-    ctx.fillRect(R - 5, -28 + b, 5, 8);
+    ctx.fillRect(-R + 2, -30 + b, 4, 4);
+    ctx.fillRect(R - 6, -30 + b, 4, 4);
     // A few thin strands combed across the bald top (comedic)
     ctx.strokeStyle = '#0a0a0a';
     ctx.lineWidth = 1.2;
