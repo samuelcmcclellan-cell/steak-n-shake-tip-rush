@@ -1,0 +1,9 @@
+{
+  "name": "steak-n-shake-tip-rush",
+  "version": "1.0.0",
+  "description": "Collect tips and dodge Francisco in this Steak n Shake browser game",
+  "private": true,
+  "dependencies": {
+    "serve": "^14.2.6"
+  }
+}

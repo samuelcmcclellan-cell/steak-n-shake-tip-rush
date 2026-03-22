@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Steak 'n' Shake Tip Rush</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Character Select Menu -->
+        <div id="menu-overlay" class="overlay">
+            <div class="menu-content">
+                <h1>STEAK 'N' SHAKE<br><span class="subtitle">TIP RUSH</span></h1>
+                <p class="instruction">Choose your character</p>
+                <div class="character-select">
+                    <button class="char-btn" id="btn-chris" onclick="selectCharacter('chris')">
+                        <div class="char-preview chris-preview"></div>
+                        <span>CHRIS</span>
+                    </button>
+                    <button class="char-btn" id="btn-jabu" onclick="selectCharacter('jabu')">
+                        <div class="char-preview jabu-preview"></div>
+                        <span>JABU</span>
+                    </button>
+                </div>
+                <p class="high-score-display" id="menu-highscore"></p>
+            </div>
+        </div>
+
+        <!-- Game Over Overlay -->
+        <div id="gameover-overlay" class="overlay" style="display:none;">
+            <div class="gameover-content">
+                <h1 class="gameover-title">FRANCISCO<br>GOT YOU!</h1>
+                <div class="final-score">$<span id="final-score">0</span></div>
+                <p id="new-highscore" class="new-highscore" style="display:none;">NEW HIGH SCORE!</p>
+                <p class="time-survived">Time: <span id="time-survived">0:00</span></p>
+                <button class="play-again-btn" onclick="goToMenu()">PLAY AGAIN</button>
+            </div>
+        </div>
+
+        <!-- Virtual Joystick -->
+        <div id="joystick-container">
+            <div id="joystick-base">
+                <div id="joystick-thumb"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
