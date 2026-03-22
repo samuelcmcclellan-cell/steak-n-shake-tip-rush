@@ -1370,20 +1370,17 @@ function renderFrancisco() {
     ctx.beginPath(); ctx.ellipse(-10, -17 + b, 5, 4, 0, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(10, -17 + b, 5, 4, 0, 0, Math.PI * 2); ctx.fill();
 
-    // Ears
+    // Small round ears (no long dangly shape)
     ctx.fillStyle = skin;
-    ctx.beginPath(); ctx.ellipse(-R, -22 + b, 5, 6, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(R, -22 + b, 5, 6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(-R, -22 + b, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(R, -22 + b, 4, 0, Math.PI * 2); ctx.fill();
 
     ctx.strokeStyle = 'rgba(0,0,0,0.08)';
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(0, -22 + b, R, 0, Math.PI * 2); ctx.stroke();
 
-    // ── BALDING HEAD - just wisps of black hair on sides ──
+    // ── BALDING HEAD - just comb-over strands, no side strips ──
     ctx.fillStyle = '#0a0a0a';
-    // Only thin strips on the sides - mostly bald on top
-    ctx.fillRect(-R + 2, -30 + b, 4, 4);
-    ctx.fillRect(R - 6, -30 + b, 4, 4);
     // A few thin strands combed across the bald top (comedic)
     ctx.strokeStyle = '#0a0a0a';
     ctx.lineWidth = 1.2;
