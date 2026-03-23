@@ -404,29 +404,19 @@ function update(dt) {
     const fHit = shrinkBox(GAME.francisco, 0.55);
     if (aabb(pHit, fHit)) { gameOver(); return; }
 
-    // Francisco speech bubbles
+    // Francisco speech bubbles when near player
     const fDist = Math.sqrt(Math.pow(p.x - GAME.francisco.x, 2) + Math.pow(p.y - GAME.francisco.y, 2));
     const playerInParking = p.y > RESTAURANT_H - 20;
-    if (GAME.franciscoSpeechTimer <= 0 && (fDist < 150 || playerInParking)) {
-        let phrases;
-        if (playerInParking) {
-            phrases = [
-                "Come back\ninside muchacho!",
-                "You can't hide\nforever!",
-                "Get back here\nmuchacho!",
-                "I'll be waiting\nfor you..."
-            ];
-        } else {
-            phrases = [
-                "Lemme help you\nwith your apron",
-                "Hey muchacho!",
-                "Lemme help you\nwith your apron",
-                "Come here\nmuchacho...",
-                "Hey muchacho!",
-                "You look tired,\nlet me help...",
-                "Lemme help you\nwith your apron"
-            ];
-        }
+    if (GAME.franciscoSpeechTimer <= 0 && fDist < 150) {
+        const phrases = [
+            "Lemme help you\nwith your apron",
+            "Hey muchacho!",
+            "Lemme help you\nwith your apron",
+            "Come here\nmuchacho...",
+            "Hey muchacho!",
+            "You look tired,\nlet me help...",
+            "Lemme help you\nwith your apron"
+        ];
         GAME.franciscoSpeech = phrases[Math.floor(Math.random() * phrases.length)];
         GAME.franciscoSpeechTimer = 3;
     }
@@ -469,28 +459,18 @@ function update(dt) {
         const mHit = shrinkBox(GAME.manager, 0.55);
         if (aabb(pHit, mHit)) { gameOver(); return; }
 
-        // Jaime speech bubbles
+        // Jaime speech bubbles when near player
         const mDist = Math.sqrt(Math.pow(p.x - GAME.manager.x, 2) + Math.pow(p.y - GAME.manager.y, 2));
-        if (GAME.caseySpeechTimer <= 0 && (mDist < 140 || playerInParking)) {
+        if (GAME.caseySpeechTimer <= 0 && mDist < 140) {
             const name = GAME.player.name;
-            let phrases;
-            if (playerInParking) {
-                phrases = [
-                    name + "! You're\nSO FIRED!",
-                    name + '! Get back\nto WORK!',
-                    name + "! I'm telling\ncorporate!",
-                    'Get back inside\nNOW ' + name + '!'
-                ];
-            } else {
-                phrases = [
-                    name + ' I need\nyour help!',
-                    name + '! Get\nover here!',
-                    name + ' I need\nyour help!',
-                    'Where are you\ngoing ' + name + '?!',
-                    name + '! Come\nhelp me NOW!',
-                    name + ' I need\nyour help!'
-                ];
-            }
+            const phrases = [
+                name + ' I need\nyour help!',
+                name + '! Get\nover here!',
+                name + ' I need\nyour help!',
+                'Where are you\ngoing ' + name + '?!',
+                name + '! Come\nhelp me NOW!',
+                name + ' I need\nyour help!'
+            ];
             GAME.caseySpeech = phrases[Math.floor(Math.random() * phrases.length)];
             GAME.caseySpeechTimer = 3;
         }
@@ -585,15 +565,8 @@ function updateFrancisco(dt) {
     // Speed ramps faster: +7 per difficulty level (every 8 sec)
     f.speed = Math.min(f.maxSpeed, f.baseSpeed + GAME.difficulty * 7);
 
-    // If player is in parking lot, chase toward door instead
-    let targetX = p.x, targetY = p.y;
-    if (p.y > RESTAURANT_H - 20) {
-        targetX = GAME_W / 2 - f.w / 2;
-        targetY = RESTAURANT_H - 30;
-    }
-
-    let fdx = targetX - f.x;
-    let fdy = targetY - f.y;
+    let fdx = p.x - f.x;
+    let fdy = p.y - f.y;
     const dist = Math.sqrt(fdx * fdx + fdy * fdy);
     if (dist > 0) { fdx /= dist; fdy /= dist; }
 
@@ -628,7 +601,7 @@ function updateFrancisco(dt) {
 
     f.lastX = f.x; f.lastY = f.y;
     f.x = Math.max(12, Math.min(GAME_W - 12 - f.w, f.x));
-    f.y = Math.max(12, Math.min(RESTAURANT_H - 12 - f.h, f.y));
+    f.y = Math.max(12, Math.min(WORLD_H - 12 - f.h, f.y));
 }
 
 function updateManager(dt) {
@@ -636,16 +609,9 @@ function updateManager(dt) {
     const p = GAME.player;
     m.walkFrame += dt * 10;
 
-    // If player is in parking lot, chase toward door instead
-    let targetX = p.x, targetY = p.y;
-    if (p.y > RESTAURANT_H - 20) {
-        targetX = GAME_W / 2 - m.w / 2;
-        targetY = RESTAURANT_H - 30;
-    }
-
     // Faster than Francisco, more erratic
-    let mdx = targetX - m.x;
-    let mdy = targetY - m.y;
+    let mdx = p.x - m.x;
+    let mdy = p.y - m.y;
     const dist = Math.sqrt(mdx * mdx + mdy * mdy);
     if (dist > 0) { mdx /= dist; mdy /= dist; }
 
@@ -675,7 +641,7 @@ function updateManager(dt) {
     } else { m.stuckTimer = 0; }
     m.lastX = m.x; m.lastY = m.y;
     m.x = Math.max(12, Math.min(GAME_W - 12 - m.w, m.x));
-    m.y = Math.max(12, Math.min(RESTAURANT_H - 12 - m.h, m.y));
+    m.y = Math.max(12, Math.min(WORLD_H - 12 - m.h, m.y));
 }
 
 function spawnNPCs() {
@@ -1288,6 +1254,94 @@ function renderParkingLot() {
     ctx.font = 'bold 32px Bungee, Arial';
     ctx.textAlign = 'center';
     ctx.fillText('PARKING', GAME_W / 2, WORLD_H - 40);
+
+    // ---- DRIVE-THRU on right side ----
+    const dtX = GAME_W - 65; // drive-thru lane left edge
+    const dtW = 55;          // lane width
+    const dtTopY = PARKING_LOT_Y + 40;
+    const dtBotY = WORLD_H - 30;
+
+    // Lane asphalt (slightly lighter than parking lot)
+    ctx.fillStyle = '#4a4a4a';
+    ctx.fillRect(dtX, dtTopY, dtW, dtBotY - dtTopY);
+
+    // Lane border lines (white dashed)
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 6]);
+    ctx.beginPath();
+    ctx.moveTo(dtX, dtTopY); ctx.lineTo(dtX, dtBotY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(dtX + dtW, dtTopY); ctx.lineTo(dtX + dtW, dtBotY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Direction arrows on lane
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.font = 'bold 24px Arial';
+    ctx.textAlign = 'center';
+    for (let ay = dtTopY + 30; ay < dtBotY - 20; ay += 60) {
+        ctx.fillText('▲', dtX + dtW / 2, ay);
+    }
+
+    // Drive-thru window on building wall
+    const windowY = PARKING_LOT_Y - 5;
+    ctx.fillStyle = '#555';
+    ctx.fillRect(dtX + 5, windowY, 40, 18);
+    ctx.fillStyle = '#87CEEB';
+    ctx.globalAlpha = 0.8;
+    ctx.fillRect(dtX + 8, windowY + 3, 34, 12);
+    ctx.globalAlpha = 1;
+    // Window awning
+    ctx.fillStyle = '#CC0000';
+    ctx.fillRect(dtX + 2, windowY - 6, 46, 7);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 8px Bungee, Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('DRIVE-THRU', dtX + dtW / 2, windowY - 1);
+
+    // Menu board
+    const mbX = dtX + 5;
+    const mbY = PARKING_LOT_Y + 70;
+    // Post
+    ctx.fillStyle = '#666';
+    ctx.fillRect(mbX + 16, mbY + 40, 4, 20);
+    // Board
+    ctx.fillStyle = '#222';
+    ctx.fillRect(mbX, mbY, 36, 42);
+    ctx.strokeStyle = '#CC0000';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(mbX, mbY, 36, 42);
+    // Menu text
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 7px Bungee, Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('MENU', mbX + 18, mbY + 10);
+    ctx.fillStyle = '#fff';
+    ctx.font = '6px Arial';
+    ctx.fillText('BURGER $4', mbX + 18, mbY + 20);
+    ctx.fillText('FRISCO  $6', mbX + 18, mbY + 28);
+    ctx.fillText('SHAKE  $3', mbX + 18, mbY + 36);
+
+    // NPC cars waiting in drive-thru lane
+    // Car 1 - blue sedan near window
+    const dtCar1Y = PARKING_LOT_Y + 20;
+    renderCar(ctx, { x: dtX + 6, y: dtCar1Y, w: 38, h: 70, color: '#2255AA', accent: '#1a4488', type: 'neon02' });
+
+    // Car 2 - white SUV further back
+    const dtCar2Y = PARKING_LOT_Y + 120;
+    renderCar(ctx, { x: dtX + 4, y: dtCar2Y, w: 42, h: 75, color: '#ddd', accent: '#bbb', type: 'camaro85' });
+
+    // "DRIVE THRU" text on ground
+    ctx.save();
+    ctx.translate(dtX + dtW / 2, WORLD_H - 60);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.font = 'bold 18px Bungee, Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('DRIVE-THRU', 0, 0);
+    ctx.restore();
 }
 
 function renderCar(ctx, car) {
