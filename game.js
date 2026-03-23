@@ -36,8 +36,10 @@ const GAME = {
     managerTimer: 0,
     managerCooldown: 0,
     npcs: [],               // customer NPCs sitting at tables
-    franciscoSpeech: '',    // current speech bubble text
-    franciscoSpeechTimer: 0
+    franciscoSpeech: '',
+    franciscoSpeechTimer: 0,
+    caseySpeech: '',
+    caseySpeechTimer: 0
 };
 
 // Load Steak 'n' Shake logo
@@ -247,6 +249,8 @@ function startGame() {
     };
     GAME.franciscoSpeech = '';
     GAME.franciscoSpeechTimer = 0;
+    GAME.caseySpeech = '';
+    GAME.caseySpeechTimer = 0;
 
     // Crazy blond manager - starts inactive, jumps in periodically
     GAME.manager = {
@@ -405,6 +409,26 @@ function update(dt) {
         // Manager catches player too
         const mHit = shrinkBox(GAME.manager, 0.55);
         if (aabb(pHit, mHit)) { gameOver(); return; }
+
+        // Casey speech bubbles when near player
+        const mDist = Math.sqrt(Math.pow(p.x - GAME.manager.x, 2) + Math.pow(p.y - GAME.manager.y, 2));
+        if (GAME.caseySpeechTimer <= 0 && mDist < 140) {
+            const name = GAME.player.name;
+            const phrases = [
+                name + ' I need\nyour help!',
+                name + '! Get\nover here!',
+                name + ' I need\nyour help!',
+                'Where are you\ngoing ' + name + '?!',
+                name + '! Come\nhelp me NOW!',
+                name + ' I need\nyour help!'
+            ];
+            GAME.caseySpeech = phrases[Math.floor(Math.random() * phrases.length)];
+            GAME.caseySpeechTimer = 3;
+        }
+        if (GAME.caseySpeechTimer > 0) {
+            GAME.caseySpeechTimer -= dt;
+            if (GAME.caseySpeechTimer <= 0) GAME.caseySpeech = '';
+        }
     }
 
     // --- FOOD DELIVERY MECHANIC ---
@@ -879,6 +903,34 @@ function render() {
         ctx.textBaseline = 'middle';
         lines.forEach((line, i) => {
             ctx.fillText(line, bx, by - bh + 12 + i * 16);
+        });
+    }
+
+    // Casey speech bubble
+    if (GAME.caseySpeech && GAME.caseySpeechTimer > 0 && GAME.managerActive) {
+        const m = GAME.manager;
+        const mx = m.x + m.w / 2;
+        const my = m.y - 15;
+        const mlines = GAME.caseySpeech.split('\n');
+        const mbw = 130;
+        const mbh = 16 + mlines.length * 16;
+        ctx.fillStyle = 'rgba(255,220,240,0.95)';
+        ctx.beginPath();
+        ctx.roundRect(mx - mbw / 2, my - mbh, mbw, mbh, 8);
+        ctx.fill();
+        ctx.strokeStyle = '#CC0066';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(255,220,240,0.95)';
+        ctx.beginPath();
+        ctx.moveTo(mx - 6, my); ctx.lineTo(mx, my + 8); ctx.lineTo(mx + 6, my);
+        ctx.fill();
+        ctx.fillStyle = '#880044';
+        ctx.font = 'bold 16px Bungee, Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        mlines.forEach((line, i) => {
+            ctx.fillText(line, mx, my - mbh + 12 + i * 16);
         });
     }
 
@@ -1548,7 +1600,7 @@ function renderManager() {
     ctx.textAlign = 'center';
     ctx.shadowColor = 'rgba(0,0,0,0.5)';
     ctx.shadowBlur = 3;
-    ctx.fillText('MANAGER', 0, -28 + bob);
+    ctx.fillText('CASEY', 0, -28 + bob);
     ctx.shadowBlur = 0;
 
     ctx.restore();
@@ -1660,7 +1712,7 @@ function renderHUD() {
         ctx.textAlign = 'center';
         ctx.shadowColor = 'rgba(255, 0, 100, 0.6)';
         ctx.shadowBlur = 10;
-        ctx.fillText('⚡ MANAGER IS COMING! ⚡', GAME_W / 2, GAME_H - 40);
+        ctx.fillText('⚡ CASEY IS COMING! ⚡', GAME_W / 2, GAME_H - 40);
         ctx.shadowBlur = 0;
     }
 }
