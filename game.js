@@ -103,7 +103,9 @@ const TABLES = [
 // All tables and booths that can receive food orders
 const ALL_SEATING = [...TABLES, ...BOOTHS];
 
-const OBSTACLES = [...WALLS, COUNTER, ...BOOTHS, ...TABLES, ...PARKING_WALLS, ...PARKING_CARS];
+// Neon (index 2) is added dynamically when Jaime arrives
+const STATIC_PARKING_CARS = [PARKING_CARS[0], PARKING_CARS[1]];
+const OBSTACLES = [...WALLS, COUNTER, ...BOOTHS, ...TABLES, ...PARKING_WALLS, ...STATIC_PARKING_CARS];
 
 // Food pickup zone (near counter)
 const FOOD_PICKUP = { x: GAME_W / 2 - 40, y: 88, w: 80, h: 30 };
@@ -283,6 +285,11 @@ function startGame() {
     GAME.managerActive = false;
     GAME.managerTimer = 0;
     GAME.managerCooldown = 10; // manager joins after 10 seconds
+    GAME.jaimeArriving = false;
+    GAME.jaimeArrived = false;
+    GAME.neonParked = false;
+    GAME.neonDriveY = WORLD_H + 80;
+    GAME.neonDriveX = PARKING_CARS[2].x;
 
     // NPCs - customers sitting at booths/tables
     GAME.npcs = [];
@@ -428,23 +435,32 @@ function update(dt) {
         if (GAME.franciscoSpeechTimer <= 0) GAME.franciscoSpeech = '';
     }
 
-    // Manager AI - joins the chase permanently after cooldown
+    // Manager AI - Jaime pulls up in her yellow Dodge Neon
     if (!GAME.managerActive) {
         GAME.managerCooldown -= dt;
-        if (GAME.managerCooldown <= 0) {
-            GAME.managerActive = true;
-            // Spawn in a clear walkable area (center aisle or bottom)
-            const spawnSpots = [
-                { x: GAME_W / 2 - 15, y: 130 },  // center top (below counter)
-                { x: GAME_W / 2 - 15, y: GAME_H - 60 },  // center bottom
-                { x: 120, y: 250 },  // left aisle
-                { x: GAME_W - 150, y: 250 },  // right aisle
-            ];
-            const spot = spawnSpots[Math.floor(Math.random() * spawnSpots.length)];
-            GAME.manager.x = spot.x;
-            GAME.manager.y = spot.y;
-            GAME.manager.lastX = spot.x;
-            GAME.manager.lastY = spot.y;
+        if (GAME.managerCooldown <= 0 && !GAME.jaimeArriving) {
+            // Start the Neon driving in from the bottom
+            GAME.jaimeArriving = true;
+            GAME.neonDriveY = WORLD_H + 80; // start off-screen below
+            GAME.neonTargetY = PARKING_CARS[2].y; // the Neon's parking spot
+            GAME.neonDriveX = PARKING_CARS[2].x;
+        }
+        if (GAME.jaimeArriving) {
+            // Drive the Neon up to its parking spot
+            GAME.neonDriveY -= 180 * dt; // driving speed
+            if (GAME.neonDriveY <= GAME.neonTargetY) {
+                GAME.neonDriveY = GAME.neonTargetY;
+                GAME.jaimeArriving = false;
+                GAME.jaimeArrived = true;
+                GAME.managerActive = true;
+                GAME.neonParked = true;
+                // Jaime gets out next to the car
+                const neon = PARKING_CARS[2];
+                GAME.manager.x = neon.x - 35;
+                GAME.manager.y = neon.y + 20;
+                GAME.manager.lastX = GAME.manager.x;
+                GAME.manager.lastY = GAME.manager.y;
+            }
         }
     }
     if (GAME.managerActive) {
@@ -753,6 +769,8 @@ function shrinkBox(box, factor) {
 
 function collidesWithObstacles(box) {
     for (const obs of OBSTACLES) { if (aabb(box, obs)) return true; }
+    // Neon is only an obstacle after it's parked
+    if (GAME.neonParked && aabb(box, PARKING_CARS[2])) return true;
     return false;
 }
 
@@ -1243,8 +1261,17 @@ function renderParkingLot() {
         ctx.stroke();
     }
 
-    // Render cars
-    PARKING_CARS.forEach(car => renderCar(ctx, car));
+    // Render static cars (Camaros)
+    renderCar(ctx, PARKING_CARS[0]);
+    renderCar(ctx, PARKING_CARS[1]);
+
+    // Render Neon - either driving in or parked
+    if (GAME.jaimeArriving) {
+        const neon = PARKING_CARS[2];
+        renderCar(ctx, { ...neon, y: GAME.neonDriveY });
+    } else if (GAME.neonParked) {
+        renderCar(ctx, PARKING_CARS[2]);
+    }
 
     // EXIT sign above door (visible from parking lot)
     const doorCenterX = GAME_W / 2;
@@ -1361,12 +1388,6 @@ function renderCar(ctx, car) {
         ctx.fillRect(cx + cw - 1, cy + 18, 4, 5);
     }
 
-    // Car label below
-    ctx.fillStyle = '#ddd';
-    ctx.font = 'bold 11px Bungee, Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText(car.label, cx + cw / 2, cy + ch + 5);
 }
 
 // ============================================
