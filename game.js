@@ -4,6 +4,8 @@
 
 const GAME_W = 480;
 const GAME_H = 720;
+const WORLD_H = 1100;
+const RESTAURANT_H = 720;
 
 const GAME = {
     state: 'MENU',
@@ -39,7 +41,8 @@ const GAME = {
     franciscoSpeech: '',
     franciscoSpeechTimer: 0,
     caseySpeech: '',
-    caseySpeechTimer: 0
+    caseySpeechTimer: 0,
+    cameraY: 0
 };
 
 // Load Steak 'n' Shake logo
@@ -51,9 +54,25 @@ logoImg.src = 'https://cdn.freebiesupply.com/logos/large/2x/steak-n-shake-logo-p
 // Restaurant layout
 const WALLS = [
     { x: 0, y: 0, w: GAME_W, h: 10 },
-    { x: 0, y: GAME_H - 10, w: GAME_W, h: 10 },
+    // Bottom wall split into two segments with door gap (70px opening centered)
+    { x: 0, y: GAME_H - 10, w: GAME_W / 2 - 35, h: 10 },
+    { x: GAME_W / 2 + 35, y: GAME_H - 10, w: GAME_W / 2 - 35, h: 10 },
     { x: 0, y: 0, w: 10, h: GAME_H },
     { x: GAME_W - 10, y: 0, w: 10, h: GAME_H },
+];
+
+// Parking lot
+const PARKING_LOT_Y = RESTAURANT_H;
+const PARKING_CARS = [
+    { x: 50,  y: 800, w: 48, h: 90, color: '#111', accent: '#222', label: "'85 CAMARO", type: 'camaro85' },
+    { x: 215, y: 820, w: 48, h: 90, color: '#CC2222', accent: '#881111', label: "'88 CAMARO", type: 'camaro88' },
+    { x: 375, y: 790, w: 42, h: 78, color: '#DDDD22', accent: '#AAAA11', label: "'02 NEON", type: 'neon02' },
+];
+
+const PARKING_WALLS = [
+    { x: 0, y: RESTAURANT_H, w: 10, h: WORLD_H - RESTAURANT_H },
+    { x: GAME_W - 10, y: RESTAURANT_H, w: 10, h: WORLD_H - RESTAURANT_H },
+    { x: 0, y: WORLD_H - 10, w: GAME_W, h: 10 },
 ];
 
 const COUNTER = { x: 30, y: 50, w: GAME_W - 60, h: 35 };
@@ -84,7 +103,7 @@ const TABLES = [
 // All tables and booths that can receive food orders
 const ALL_SEATING = [...TABLES, ...BOOTHS];
 
-const OBSTACLES = [...WALLS, COUNTER, ...BOOTHS, ...TABLES];
+const OBSTACLES = [...WALLS, COUNTER, ...BOOTHS, ...TABLES, ...PARKING_WALLS, ...PARKING_CARS];
 
 // Food pickup zone (near counter)
 const FOOD_PICKUP = { x: GAME_W / 2 - 40, y: 88, w: 80, h: 30 };
@@ -226,6 +245,7 @@ function startGame() {
     GAME.milkshakeSpawnTimer = 0;
     GAME.orderSpawnTimer = 0;
     GAME.nextOrderSpawn = 2;
+    GAME.cameraY = 0;
 
     const skinColor = GAME.selectedChar === 'chris' ? '#FDBCB4' : '#C68642';
     GAME.player = {
@@ -359,7 +379,15 @@ function update(dt) {
     if (!collidesWithObstacles({ x: p.x, y: newPY, w: p.w, h: p.h })) p.y = newPY;
 
     p.x = Math.max(12, Math.min(GAME_W - 12 - p.w, p.x));
-    p.y = Math.max(12, Math.min(GAME_H - 12 - p.h, p.y));
+    p.y = Math.max(12, Math.min(WORLD_H - 12 - p.h, p.y));
+
+    // Camera follow player - stay at 0 while in restaurant, scroll when near/in parking lot
+    let targetCamY = 0;
+    if (p.y > RESTAURANT_H - 200) {
+        // Start scrolling as player approaches the exit
+        targetCamY = Math.max(0, Math.min(WORLD_H - GAME_H, p.y + p.h / 2 - GAME_H / 2));
+    }
+    GAME.cameraY += (targetCamY - GAME.cameraY) * 6 * dt;
 
     // Francisco AI
     updateFrancisco(dt);
@@ -369,18 +397,29 @@ function update(dt) {
     const fHit = shrinkBox(GAME.francisco, 0.55);
     if (aabb(pHit, fHit)) { gameOver(); return; }
 
-    // Francisco speech bubbles when near player
+    // Francisco speech bubbles
     const fDist = Math.sqrt(Math.pow(p.x - GAME.francisco.x, 2) + Math.pow(p.y - GAME.francisco.y, 2));
-    if (GAME.franciscoSpeechTimer <= 0 && fDist < 150) {
-        const phrases = [
-            "Lemme help you\nwith your apron",
-            "Hey muchacho!",
-            "Lemme help you\nwith your apron",
-            "Come here\nmuchacho...",
-            "Hey muchacho!",
-            "You look tired,\nlet me help...",
-            "Lemme help you\nwith your apron"
-        ];
+    const playerInParking = p.y > RESTAURANT_H - 20;
+    if (GAME.franciscoSpeechTimer <= 0 && (fDist < 150 || playerInParking)) {
+        let phrases;
+        if (playerInParking) {
+            phrases = [
+                "Come back\ninside muchacho!",
+                "You can't hide\nforever!",
+                "Get back here\nmuchacho!",
+                "I'll be waiting\nfor you..."
+            ];
+        } else {
+            phrases = [
+                "Lemme help you\nwith your apron",
+                "Hey muchacho!",
+                "Lemme help you\nwith your apron",
+                "Come here\nmuchacho...",
+                "Hey muchacho!",
+                "You look tired,\nlet me help...",
+                "Lemme help you\nwith your apron"
+            ];
+        }
         GAME.franciscoSpeech = phrases[Math.floor(Math.random() * phrases.length)];
         GAME.franciscoSpeechTimer = 3;
     }
@@ -414,18 +453,28 @@ function update(dt) {
         const mHit = shrinkBox(GAME.manager, 0.55);
         if (aabb(pHit, mHit)) { gameOver(); return; }
 
-        // Casey speech bubbles when near player
+        // Jaime speech bubbles
         const mDist = Math.sqrt(Math.pow(p.x - GAME.manager.x, 2) + Math.pow(p.y - GAME.manager.y, 2));
-        if (GAME.caseySpeechTimer <= 0 && mDist < 140) {
+        if (GAME.caseySpeechTimer <= 0 && (mDist < 140 || playerInParking)) {
             const name = GAME.player.name;
-            const phrases = [
-                name + ' I need\nyour help!',
-                name + '! Get\nover here!',
-                name + ' I need\nyour help!',
-                'Where are you\ngoing ' + name + '?!',
-                name + '! Come\nhelp me NOW!',
-                name + ' I need\nyour help!'
-            ];
+            let phrases;
+            if (playerInParking) {
+                phrases = [
+                    name + "! You're\nSO FIRED!",
+                    name + '! Get back\nto WORK!',
+                    name + "! I'm telling\ncorporate!",
+                    'Get back inside\nNOW ' + name + '!'
+                ];
+            } else {
+                phrases = [
+                    name + ' I need\nyour help!',
+                    name + '! Get\nover here!',
+                    name + ' I need\nyour help!',
+                    'Where are you\ngoing ' + name + '?!',
+                    name + '! Come\nhelp me NOW!',
+                    name + ' I need\nyour help!'
+                ];
+            }
             GAME.caseySpeech = phrases[Math.floor(Math.random() * phrases.length)];
             GAME.caseySpeechTimer = 3;
         }
@@ -520,8 +569,15 @@ function updateFrancisco(dt) {
     // Speed ramps faster: +7 per difficulty level (every 8 sec)
     f.speed = Math.min(f.maxSpeed, f.baseSpeed + GAME.difficulty * 7);
 
-    let fdx = p.x - f.x;
-    let fdy = p.y - f.y;
+    // If player is in parking lot, chase toward door instead
+    let targetX = p.x, targetY = p.y;
+    if (p.y > RESTAURANT_H - 20) {
+        targetX = GAME_W / 2 - f.w / 2;
+        targetY = RESTAURANT_H - 30;
+    }
+
+    let fdx = targetX - f.x;
+    let fdy = targetY - f.y;
     const dist = Math.sqrt(fdx * fdx + fdy * fdy);
     if (dist > 0) { fdx /= dist; fdy /= dist; }
 
@@ -556,7 +612,7 @@ function updateFrancisco(dt) {
 
     f.lastX = f.x; f.lastY = f.y;
     f.x = Math.max(12, Math.min(GAME_W - 12 - f.w, f.x));
-    f.y = Math.max(12, Math.min(GAME_H - 12 - f.h, f.y));
+    f.y = Math.max(12, Math.min(RESTAURANT_H - 12 - f.h, f.y));
 }
 
 function updateManager(dt) {
@@ -564,9 +620,16 @@ function updateManager(dt) {
     const p = GAME.player;
     m.walkFrame += dt * 10;
 
+    // If player is in parking lot, chase toward door instead
+    let targetX = p.x, targetY = p.y;
+    if (p.y > RESTAURANT_H - 20) {
+        targetX = GAME_W / 2 - m.w / 2;
+        targetY = RESTAURANT_H - 30;
+    }
+
     // Faster than Francisco, more erratic
-    let mdx = p.x - m.x;
-    let mdy = p.y - m.y;
+    let mdx = targetX - m.x;
+    let mdy = targetY - m.y;
     const dist = Math.sqrt(mdx * mdx + mdy * mdy);
     if (dist > 0) { mdx /= dist; mdy /= dist; }
 
@@ -596,7 +659,7 @@ function updateManager(dt) {
     } else { m.stuckTimer = 0; }
     m.lastX = m.x; m.lastY = m.y;
     m.x = Math.max(12, Math.min(GAME_W - 12 - m.w, m.x));
-    m.y = Math.max(12, Math.min(GAME_H - 12 - m.h, m.y));
+    m.y = Math.max(12, Math.min(RESTAURANT_H - 12 - m.h, m.y));
 }
 
 function spawnNPCs() {
@@ -700,7 +763,9 @@ function collidesWithObstacles(box) {
 function render() {
     const ctx = GAME.ctx;
     ctx.save();
+    ctx.translate(0, -GAME.cameraY);
     renderRestaurant();
+    renderParkingLot();
 
     // Render order indicators on tables
     GAME.orders.forEach(order => {
@@ -938,17 +1003,17 @@ function render() {
         });
     }
 
-    // Manager warning flash
+    // Manager warning flash (use camera offset to cover viewport)
     if (GAME.managerActive) {
         const flash = Math.sin(GAME.elapsed * 8) > 0;
         if (GAME.managerTimer > 6 && flash) {
             ctx.fillStyle = 'rgba(255, 0, 100, 0.08)';
-            ctx.fillRect(0, 0, GAME_W, GAME_H);
+            ctx.fillRect(0, GAME.cameraY, GAME_W, GAME_H);
         }
     }
 
-    renderHUD();
     ctx.restore();
+    renderHUD();
 }
 
 function renderShadow(x, y, w, h) {
@@ -1006,13 +1071,24 @@ function renderRestaurant() {
     ctx.fillText('KITCHEN', GAME_W / 2, 9);
     ctx.shadowBlur = 0;
 
-    // Entry door
+    // Entry door - now an open passable gap
+    // Door frame on left and right sides
     ctx.fillStyle = '#555';
-    ctx.fillRect(GAME_W / 2 - 35, GAME_H - 12, 70, 12);
-    ctx.fillStyle = '#87CEEB';
-    ctx.globalAlpha = 0.7;
-    ctx.fillRect(GAME_W / 2 - 30, GAME_H - 10, 60, 8);
-    ctx.globalAlpha = 1;
+    ctx.fillRect(GAME_W / 2 - 38, GAME_H - 14, 6, 16);
+    ctx.fillRect(GAME_W / 2 + 32, GAME_H - 14, 6, 16);
+    // Door mat / threshold
+    ctx.fillStyle = '#666';
+    ctx.fillRect(GAME_W / 2 - 32, GAME_H - 10, 64, 10);
+
+    // Pulsing EXIT arrow
+    if (GAME.state === 'PLAYING') {
+        const exitPulse = 0.5 + Math.sin(GAME.elapsed * 4) * 0.3;
+        ctx.fillStyle = `rgba(0, 200, 0, ${exitPulse})`;
+        ctx.font = 'bold 14px Bungee, Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('▼ EXIT ▼', GAME_W / 2, GAME_H - 22);
+    }
 
     // Counter
     ctx.fillStyle = '#777';
@@ -1090,6 +1166,207 @@ function renderRestaurant() {
         ctx.beginPath(); ctx.arc(t.x + t.w / 2 - 10, t.y + t.h + 8, 4, 0, Math.PI * 2); ctx.fill();
         ctx.beginPath(); ctx.arc(t.x + t.w / 2 + 10, t.y + t.h + 8, 4, 0, Math.PI * 2); ctx.fill();
     });
+}
+
+// ============================================
+// PARKING LOT RENDERING
+// ============================================
+
+function renderParkingLot() {
+    const ctx = GAME.ctx;
+
+    // Asphalt
+    ctx.fillStyle = '#3a3a3a';
+    ctx.fillRect(0, PARKING_LOT_Y, GAME_W, WORLD_H - PARKING_LOT_Y);
+
+    // Asphalt texture - subtle speckles
+    ctx.fillStyle = 'rgba(255,255,255,0.03)';
+    for (let i = 0; i < 60; i++) {
+        const sx = (i * 73 + 17) % GAME_W;
+        const sy = PARKING_LOT_Y + (i * 47 + 31) % (WORLD_H - PARKING_LOT_Y);
+        ctx.fillRect(sx, sy, 2, 2);
+    }
+
+    // Parking lines (yellow)
+    ctx.strokeStyle = '#FFD700';
+    ctx.lineWidth = 2;
+    const spotW = 60;
+    const startX = 30;
+    const lineY1 = PARKING_LOT_Y + 60;
+    const lineY2 = lineY1 + 110;
+    for (let i = 0; i < 7; i++) {
+        const lx = startX + i * spotW;
+        ctx.beginPath();
+        ctx.moveTo(lx, lineY1);
+        ctx.lineTo(lx, lineY2);
+        ctx.stroke();
+    }
+    // Horizontal lines
+    ctx.beginPath();
+    ctx.moveTo(startX, lineY1);
+    ctx.lineTo(startX + 6 * spotW, lineY1);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(startX, lineY2);
+    ctx.lineTo(startX + 6 * spotW, lineY2);
+    ctx.stroke();
+
+    // Handicap symbol in one empty spot
+    ctx.fillStyle = '#2266CC';
+    ctx.fillRect(startX + 3 * spotW + 8, lineY1 + 35, 44, 40);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 28px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('♿', startX + 3 * spotW + 30, lineY1 + 55);
+
+    // Curb / sidewalk strip at top of parking lot
+    ctx.fillStyle = '#888';
+    ctx.fillRect(0, PARKING_LOT_Y, GAME_W, 8);
+    ctx.fillStyle = '#aaa';
+    ctx.fillRect(0, PARKING_LOT_Y, GAME_W, 3);
+
+    // Parking lot walls
+    ctx.fillStyle = '#555';
+    PARKING_WALLS.forEach(w => ctx.fillRect(w.x, w.y, w.w, w.h));
+
+    // Bottom wall - chain link fence look
+    ctx.fillStyle = '#777';
+    ctx.fillRect(0, WORLD_H - 10, GAME_W, 10);
+    ctx.strokeStyle = '#999';
+    ctx.lineWidth = 1;
+    for (let fx = 10; fx < GAME_W - 10; fx += 15) {
+        ctx.beginPath();
+        ctx.moveTo(fx, WORLD_H - 10);
+        ctx.lineTo(fx + 7, WORLD_H - 5);
+        ctx.lineTo(fx, WORLD_H);
+        ctx.stroke();
+    }
+
+    // Render cars
+    PARKING_CARS.forEach(car => renderCar(ctx, car));
+
+    // EXIT sign above door (visible from parking lot)
+    const doorCenterX = GAME_W / 2;
+    ctx.fillStyle = '#CC0000';
+    ctx.fillRect(doorCenterX - 30, PARKING_LOT_Y + 12, 60, 22);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 16px Bungee, Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('ENTRANCE', doorCenterX, PARKING_LOT_Y + 23);
+
+    // "PARKING" text on ground
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.font = 'bold 32px Bungee, Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('PARKING', GAME_W / 2, WORLD_H - 40);
+}
+
+function renderCar(ctx, car) {
+    const cx = car.x;
+    const cy = car.y;
+    const cw = car.w;
+    const ch = car.h;
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(cx + 3, cy + 3, cw, ch);
+
+    // Body
+    ctx.fillStyle = car.color;
+    ctx.fillRect(cx, cy, cw, ch);
+
+    // Body outline
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(cx, cy, cw, ch);
+
+    // Car-specific details
+    if (car.type === 'camaro85' || car.type === 'camaro88') {
+        // Windshield (top portion)
+        ctx.fillStyle = '#1a2a3a';
+        ctx.fillRect(cx + 6, cy + 15, cw - 12, 18);
+        ctx.strokeStyle = 'rgba(100,150,200,0.3)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(cx + 6, cy + 15, cw - 12, 18);
+
+        // Rear window
+        ctx.fillStyle = '#1a2a3a';
+        ctx.fillRect(cx + 8, cy + ch - 30, cw - 16, 14);
+
+        // Hood line
+        ctx.fillStyle = car.accent;
+        ctx.fillRect(cx + 4, cy + 2, cw - 8, 12);
+
+        // Headlights (front = top)
+        ctx.fillStyle = '#FFFFCC';
+        ctx.beginPath(); ctx.arc(cx + 8, cy + 4, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx + cw - 8, cy + 4, 4, 0, Math.PI * 2); ctx.fill();
+
+        // Taillights (rear = bottom)
+        ctx.fillStyle = '#CC0000';
+        ctx.fillRect(cx + 3, cy + ch - 6, 10, 4);
+        ctx.fillRect(cx + cw - 13, cy + ch - 6, 10, 4);
+
+        // Side mirrors
+        ctx.fillStyle = car.color;
+        ctx.fillRect(cx - 4, cy + 20, 5, 6);
+        ctx.fillRect(cx + cw - 1, cy + 20, 5, 6);
+
+        // T-top for '85 (two dark roof panels)
+        if (car.type === 'camaro85') {
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(cx + 6, cy + 35, (cw - 16) / 2, 10);
+            ctx.fillRect(cx + cw / 2 + 2, cy + 35, (cw - 16) / 2, 10);
+        }
+
+        // Spoiler for '88
+        if (car.type === 'camaro88') {
+            ctx.fillStyle = car.accent;
+            ctx.fillRect(cx - 2, cy + ch - 4, cw + 4, 5);
+        }
+
+    } else if (car.type === 'neon02') {
+        // More compact / rounded look
+        // Windshield
+        ctx.fillStyle = '#2a3a4a';
+        ctx.fillRect(cx + 5, cy + 14, cw - 10, 16);
+        ctx.strokeStyle = 'rgba(100,150,200,0.3)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(cx + 5, cy + 14, cw - 10, 16);
+
+        // Rear window
+        ctx.fillStyle = '#2a3a4a';
+        ctx.fillRect(cx + 6, cy + ch - 26, cw - 12, 12);
+
+        // Headlights (round)
+        ctx.fillStyle = '#FFFFCC';
+        ctx.beginPath(); ctx.arc(cx + 8, cy + 5, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx + cw - 8, cy + 5, 4, 0, Math.PI * 2); ctx.fill();
+
+        // Taillights
+        ctx.fillStyle = '#CC0000';
+        ctx.beginPath(); ctx.arc(cx + 7, cy + ch - 5, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx + cw - 7, cy + ch - 5, 3, 0, Math.PI * 2); ctx.fill();
+
+        // Black bumpers
+        ctx.fillStyle = '#333';
+        ctx.fillRect(cx + 2, cy, cw - 4, 4);
+        ctx.fillRect(cx + 2, cy + ch - 4, cw - 4, 4);
+
+        // Side mirrors
+        ctx.fillStyle = '#333';
+        ctx.fillRect(cx - 3, cy + 18, 4, 5);
+        ctx.fillRect(cx + cw - 1, cy + 18, 4, 5);
+    }
+
+    // Car label below
+    ctx.fillStyle = '#ddd';
+    ctx.font = 'bold 11px Bungee, Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(car.label, cx + cw / 2, cy + ch + 5);
 }
 
 // ============================================
