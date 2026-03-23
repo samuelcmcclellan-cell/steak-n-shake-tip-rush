@@ -394,14 +394,18 @@ function update(dt) {
         GAME.managerCooldown -= dt;
         if (GAME.managerCooldown <= 0) {
             GAME.managerActive = true;
-            // Enter from a random side
-            if (Math.random() < 0.5) {
-                GAME.manager.x = -30;
-                GAME.manager.y = 200 + Math.random() * 300;
-            } else {
-                GAME.manager.x = GAME_W + 10;
-                GAME.manager.y = 200 + Math.random() * 300;
-            }
+            // Spawn in a clear walkable area (center aisle or bottom)
+            const spawnSpots = [
+                { x: GAME_W / 2 - 15, y: 130 },  // center top (below counter)
+                { x: GAME_W / 2 - 15, y: GAME_H - 60 },  // center bottom
+                { x: 120, y: 250 },  // left aisle
+                { x: GAME_W - 150, y: 250 },  // right aisle
+            ];
+            const spot = spawnSpots[Math.floor(Math.random() * spawnSpots.length)];
+            GAME.manager.x = spot.x;
+            GAME.manager.y = spot.y;
+            GAME.manager.lastX = spot.x;
+            GAME.manager.lastY = spot.y;
         }
     }
     if (GAME.managerActive) {
