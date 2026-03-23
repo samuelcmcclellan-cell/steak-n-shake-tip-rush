@@ -1600,7 +1600,7 @@ function renderManager() {
     ctx.textAlign = 'center';
     ctx.shadowColor = 'rgba(0,0,0,0.5)';
     ctx.shadowBlur = 3;
-    ctx.fillText('CASEY', 0, -28 + bob);
+    ctx.fillText('JAIME', 0, -28 + bob);
     ctx.shadowBlur = 0;
 
     ctx.restore();
@@ -1712,7 +1712,7 @@ function renderHUD() {
         ctx.textAlign = 'center';
         ctx.shadowColor = 'rgba(255, 0, 100, 0.6)';
         ctx.shadowBlur = 10;
-        ctx.fillText('⚡ CASEY IS COMING! ⚡', GAME_W / 2, GAME_H - 40);
+        ctx.fillText('⚡ JAIME IS COMING! ⚡', GAME_W / 2, GAME_H - 40);
         ctx.shadowBlur = 0;
     }
 }
